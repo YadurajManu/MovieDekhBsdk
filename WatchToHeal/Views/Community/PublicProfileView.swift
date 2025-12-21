@@ -1,8 +1,12 @@
 import SwiftUI
-
+import FirebaseAuth
 struct PublicProfileView: View {
     let profile: UserProfile
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appViewModel: AppViewModel
+    @StateObject private var friendshipManager = FriendshipManager.shared
+    @State private var friendshipStatus: FirestoreService.FriendshipStatus = .none
+    @State private var isProcessing = false
     
     var body: some View {
         ZStack {
@@ -38,14 +42,8 @@ struct PublicProfileView: View {
                         
                         Spacer()
                         
-                        // Action/Follow (Placeholder)
-                        Button(action: { }) {
-                            Image(systemName: "person.badge.plus")
-                                .font(.system(size: 18))
-                                .foregroundColor(.appText)
-                                .frame(width: 44, height: 44)
-                                .background(Circle().fill(Color.white.opacity(0.1)))
-                        }
+                        // Dynamic Friend Action Button
+                        friendActionButton
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
@@ -131,6 +129,111 @@ struct PublicProfileView: View {
             }
         }
         .navigationBarHidden(true)
+        .task {
+            await checkFriendshipStatus()
+        }
+    }
+    
+    @ViewBuilder
+    private var friendActionButton: some View {
+        if isProcessing {
+            ProgressView()
+                .tint(.appPrimary)
+                .scaleEffect(0.8)
+                .frame(width: 44, height: 44)
+        } else {
+            switch friendshipStatus {
+            case .none:
+                Button(action: { sendFriendRequest() }) {
+                    Image(systemName: "person.badge.plus")
+                        .font(.system(size: 16))
+                        .foregroundColor(.black)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(Color.appPrimary))
+                        .shadow(color: .appPrimary.opacity(0.3), radius: 10)
+                }
+                
+            case .requestSent:
+                Button(action: { cancelFriendRequest() }) {
+                    Text("Pending")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.appTextSecondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
+                }
+                
+            case .requestReceived:
+                Button(action: { acceptRequest() }) {
+                    Text("Accept")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(Color.appPrimary))
+                }
+                
+            case .friends:
+                Button(action: { unfriend() }) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.appPrimary)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(Color.white.opacity(0.1)))
+                }
+            }
+        }
+    }
+    
+    private func checkFriendshipStatus() async {
+        guard let currentUserId = appViewModel.currentUser?.uid else { return }
+        friendshipStatus = await friendshipManager.checkFriendshipStatus(userId: currentUserId, otherId: profile.id)
+    }
+    
+    private func sendFriendRequest() {
+        guard let currentUserId = appViewModel.currentUser?.uid else { return }
+        isProcessing = true
+        
+        Task {
+            try? await friendshipManager.sendFriendRequest(from: currentUserId, to: profile.id)
+            await checkFriendshipStatus()
+            isProcessing = false
+        }
+    }
+    
+    private func acceptRequest() {
+        guard let currentUserId = appViewModel.currentUser?.uid else { return }
+        isProcessing = true
+        
+        Task {
+            try? await friendshipManager.acceptFriendRequest(from: profile.id, to: currentUserId)
+            appViewModel.fetchUserProfile() // Refresh counts
+            await checkFriendshipStatus()
+            isProcessing = false
+        }
+    }
+    
+    private func cancelFriendRequest() {
+        guard let currentUserId = appViewModel.currentUser?.uid else { return }
+        isProcessing = true
+        
+        Task {
+            try? await FirestoreService.shared.cancelFriendRequest(from: currentUserId, to: profile.id)
+            await checkFriendshipStatus()
+            isProcessing = false
+        }
+    }
+    
+    private func unfriend() {
+        guard let currentUserId = appViewModel.currentUser?.uid else { return }
+        isProcessing = true
+        
+        Task {
+            try? await friendshipManager.removeFriend(userId: currentUserId, friendId: profile.id)
+            appViewModel.fetchUserProfile() // Refresh counts
+            await checkFriendshipStatus()
+            isProcessing = false
+        }
     }
     
     private func statItem(value: String, label: String) -> some View {

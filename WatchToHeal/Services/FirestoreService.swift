@@ -260,6 +260,179 @@ class FirestoreService {
             )
         }
     }
+    
+    // MARK: - Friend System
+    
+    enum FriendshipStatus {
+        case friends
+        case requestSent
+        case requestReceived
+        case none
+    }
+    
+    func sendFriendRequest(from senderId: String, to recipientId: String) async throws {
+        guard senderId != recipientId else { return } // Prevent self-requests
+        
+        let requestData: [String: Any] = [
+            "senderId": senderId,
+            "timestamp": Timestamp()
+        ]
+        
+        try await db.collection("friendRequests")
+            .document(recipientId)
+            .collection("requests")
+            .document(senderId)
+            .setData(requestData)
+    }
+    
+    func acceptFriendRequest(from senderId: String, to recipientId: String) async throws {
+        let batch = db.batch()
+        
+        // Create friendship for both users
+        let timestamp = Timestamp()
+        let friendshipData: [String: Any] = ["timestamp": timestamp]
+        
+        let recipientFriendRef = db.collection("friendships")
+            .document(recipientId)
+            .collection("friends")
+            .document(senderId)
+        batch.setData(friendshipData, forDocument: recipientFriendRef)
+        
+        let senderFriendRef = db.collection("friendships")
+            .document(senderId)
+            .collection("friends")
+            .document(recipientId)
+        batch.setData(friendshipData, forDocument: senderFriendRef)
+        
+        // Delete the request
+        let requestRef = db.collection("friendRequests")
+            .document(recipientId)
+            .collection("requests")
+            .document(senderId)
+        batch.deleteDocument(requestRef)
+        
+        // Update friend counts
+        let recipientRef = db.collection("users").document(recipientId)
+        batch.updateData(["followerCount": FieldValue.increment(Int64(1))], forDocument: recipientRef)
+        
+        let senderRef = db.collection("users").document(senderId)
+        batch.updateData(["followingCount": FieldValue.increment(Int64(1))], forDocument: senderRef)
+        
+        try await batch.commit()
+    }
+    
+    func declineFriendRequest(from senderId: String, to recipientId: String) async throws {
+        try await db.collection("friendRequests")
+            .document(recipientId)
+            .collection("requests")
+            .document(senderId)
+            .delete()
+    }
+    
+    func cancelFriendRequest(from senderId: String, to recipientId: String) async throws {
+        try await db.collection("friendRequests")
+            .document(recipientId)
+            .collection("requests")
+            .document(senderId)
+            .delete()
+    }
+    
+    func removeFriend(userId: String, friendId: String) async throws {
+        let batch = db.batch()
+        
+        // Remove friendship from both users
+        let userFriendRef = db.collection("friendships")
+            .document(userId)
+            .collection("friends")
+            .document(friendId)
+        batch.deleteDocument(userFriendRef)
+        
+        let friendUserRef = db.collection("friendships")
+            .document(friendId)
+            .collection("friends")
+            .document(userId)
+        batch.deleteDocument(friendUserRef)
+        
+        // Decrement friend counts
+        let userRef = db.collection("users").document(userId)
+        batch.updateData(["followerCount": FieldValue.increment(Int64(-1))], forDocument: userRef)
+        
+        let friendRef = db.collection("users").document(friendId)
+        batch.updateData(["followingCount": FieldValue.increment(Int64(-1))], forDocument: friendRef)
+        
+        try await batch.commit()
+    }
+    
+    func checkFriendshipStatus(userId: String, otherId: String) async throws -> FriendshipStatus {
+        // Check if already friends
+        let friendDoc = try await db.collection("friendships")
+            .document(userId)
+            .collection("friends")
+            .document(otherId)
+            .getDocument()
+        
+        if friendDoc.exists {
+            return .friends
+        }
+        
+        // Check if request sent
+        let sentRequestDoc = try await db.collection("friendRequests")
+            .document(otherId)
+            .collection("requests")
+            .document(userId)
+            .getDocument()
+        
+        if sentRequestDoc.exists {
+            return .requestSent
+        }
+        
+        // Check if request received
+        let receivedRequestDoc = try await db.collection("friendRequests")
+            .document(userId)
+            .collection("requests")
+            .document(otherId)
+            .getDocument()
+        
+        if receivedRequestDoc.exists {
+            return .requestReceived
+        }
+        
+        return .none
+    }
+    
+    func fetchFriendRequests(userId: String) async throws -> [UserProfile] {
+        let snapshot = try await db.collection("friendRequests")
+            .document(userId)
+            .collection("requests")
+            .order(by: "timestamp", descending: true)
+            .getDocuments()
+        
+        var profiles: [UserProfile] = []
+        for doc in snapshot.documents {
+            if let senderId = doc.data()["senderId"] as? String,
+               let profile = try? await fetchUserProfile(userId: senderId) {
+                profiles.append(profile)
+            }
+        }
+        return profiles
+    }
+    
+    func fetchFriends(userId: String) async throws -> [UserProfile] {
+        let snapshot = try await db.collection("friendships")
+            .document(userId)
+            .collection("friends")
+            .order(by: "timestamp", descending: true)
+            .getDocuments()
+        
+        var profiles: [UserProfile] = []
+        for doc in snapshot.documents {
+            let friendId = doc.documentID
+            if let profile = try? await fetchUserProfile(userId: friendId) {
+                profiles.append(profile)
+            }
+        }
+        return profiles
+    }
 }
 
 // Helper Model for History

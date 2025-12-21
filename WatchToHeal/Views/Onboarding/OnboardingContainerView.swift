@@ -86,7 +86,7 @@ struct OnboardingContainerView: View {
                     .tag(OnboardingStep.result)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                .disabled(true) // Disable swipe navigation
+                .simultaneousGesture(DragGesture(minimumDistance: 0), including: .all)
             }
         }
     }

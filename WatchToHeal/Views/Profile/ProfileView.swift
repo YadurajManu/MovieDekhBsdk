@@ -249,6 +249,33 @@ struct ProfileView: View {
                             
                             // DISCOVERY & SHARING (New)
                             menuSection(title: "Community") {
+                                NavigationLink(destination: FriendsListView()) {
+                                    menuItem(icon: "person.2.fill", title: "My Friends")
+                                }
+                                Divider().background(Color.white.opacity(0.1))
+                                NavigationLink(destination: FriendRequestsView()) {
+                                    HStack {
+                                        Image(systemName: "person.badge.plus")
+                                            .foregroundColor(.appPrimary)
+                                            .frame(width: 24)
+                                        Text("Friend Requests")
+                                            .foregroundColor(.appText)
+                                        Spacer()
+                                        if FriendshipManager.shared.pendingRequestCount > 0 {
+                                            Text("\(FriendshipManager.shared.pendingRequestCount)")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Capsule().fill(Color.appPrimary))
+                                        }
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.appTextSecondary)
+                                    }
+                                    .padding()
+                                }
+                                Divider().background(Color.white.opacity(0.1))
                                 Button(action: { showRecommendations = true }) {
                                     menuItem(icon: "sparkles", title: "Personalized For You")
                                 }
