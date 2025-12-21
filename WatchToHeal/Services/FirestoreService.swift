@@ -433,6 +433,86 @@ class FirestoreService {
         }
         return profiles
     }
+    
+    // MARK: - Community Lists
+    
+    func createCommunityList(list: CommunityList) async throws {
+        try await db.collection("communityLists").document(list.id).setData(list.dictionary)
+    }
+    
+    func likeCommunityList(listId: String, userId: String) async throws {
+        let listRef = db.collection("communityLists").document(listId)
+        let snapshot = try await listRef.getDocument()
+        guard let data = snapshot.data() else { return }
+        
+        var likedBy = data["likedBy"] as? [String] ?? []
+        let alreadyLiked = likedBy.contains(userId)
+        
+        if alreadyLiked {
+            likedBy.removeAll { $0 == userId }
+        } else {
+            likedBy.append(userId)
+        }
+        
+        try await listRef.updateData([
+            "likedBy": likedBy,
+            "likeCount": likedBy.count
+        ])
+    }
+    
+    func addComment(listId: String, comment: Comment) async throws {
+        let listRef = db.collection("communityLists").document(listId)
+        let commentRef = listRef.collection("comments").document(comment.id)
+        
+        try await db.runTransaction { (transaction, _) -> Any? in
+            transaction.setData(comment.dictionary, forDocument: commentRef)
+            transaction.updateData(["commentCount": FieldValue.increment(Int64(1))], forDocument: listRef)
+            return nil
+        }
+    }
+    
+    func fetchComments(listId: String) async throws -> [Comment] {
+        let snapshot = try await db.collection("communityLists").document(listId).collection("comments")
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { Comment(dictionary: $0.data()) }
+    }
+    
+    func deleteCommunityList(listId: String) async throws {
+        try await db.collection("communityLists").document(listId).delete()
+    }
+    
+    func updateCommunityList(list: CommunityList) async throws {
+        try await db.collection("communityLists").document(list.id).updateData(list.dictionary)
+    }
+    
+    func fetchUserCommunityLists(userId: String) async throws -> [CommunityList] {
+        // We remove the .order(by:) to avoid needing a composite index in Firestore
+        // which often causes empty results or errors if not manually created.
+        // We will sort in-memory instead.
+        let snapshot = try await db.collection("communityLists")
+            .whereField("ownerId", isEqualTo: userId)
+            .getDocuments()
+        
+        let lists = parseCommunityLists(from: snapshot)
+        return lists.sorted { $0.createdAt > $1.createdAt }
+    }
+    
+    func fetchAllCommunityLists() async throws -> [CommunityList] {
+        let snapshot = try await db.collection("communityLists")
+            .order(by: "createdAt", descending: true)
+            .limit(to: 50)
+            .getDocuments()
+        
+        return parseCommunityLists(from: snapshot)
+    }
+    
+    private func parseCommunityLists(from snapshot: QuerySnapshot) -> [CommunityList] {
+        return snapshot.documents.compactMap { doc -> CommunityList? in
+            return CommunityList(dictionary: doc.data())
+        }
+    }
 }
 
 // Helper Model for History

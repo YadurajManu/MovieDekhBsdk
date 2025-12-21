@@ -253,6 +253,10 @@ struct ProfileView: View {
                                     menuItem(icon: "person.2.fill", title: "My Friends")
                                 }
                                 Divider().background(Color.white.opacity(0.1))
+                                NavigationLink(destination: MyCommunityListsView()) {
+                                    menuItem(icon: "film.stack", title: "My Lists")
+                                }
+                                Divider().background(Color.white.opacity(0.1))
                                 NavigationLink(destination: FriendRequestsView()) {
                                     HStack {
                                         Image(systemName: "person.badge.plus")
