@@ -513,6 +513,77 @@ class FirestoreService {
             return CommunityList(dictionary: doc.data())
         }
     }
+    
+    // MARK: - Movie Community
+    
+    func getMovieSocialStats(movieId: Int) async throws -> MovieSocialStats {
+        let doc = try await db.collection("movieSocial").document("\(movieId)").getDocument()
+        if let data = doc.data() {
+            return try Firestore.Decoder().decode(MovieSocialStats.self, from: data)
+        }
+        return MovieSocialStats()
+    }
+    
+    func submitMovieVote(movieId: Int, rating: String, genreTags: [String], userReview: String?, user: UserProfile) async throws {
+        let socialRef = db.collection("movieSocial").document("\(movieId)")
+        let reviewRef = socialRef.collection("reviews").document(user.id)
+        
+        try await db.runTransaction { (transaction, _) -> Any? in
+            // 1. Get current stats
+            let socialDoc: DocumentSnapshot
+            do {
+                socialDoc = try transaction.getDocument(socialRef)
+            } catch {
+                return nil
+            }
+            
+            var stats = MovieSocialStats()
+            if socialDoc.exists, let data = socialDoc.data() {
+                stats = (try? Firestore.Decoder().decode(MovieSocialStats.self, from: data)) ?? MovieSocialStats()
+            }
+            
+            // 3. Update stats
+            stats.totalVotes += 1
+            stats.ratingCounts[rating, default: 0] += 1
+            for tag in genreTags {
+                stats.genreConsensus[tag, default: 0] += 1
+            }
+            stats.lastUpdated = Date()
+            
+            let statsData = try! Firestore.Encoder().encode(stats)
+            transaction.setData(statsData, forDocument: socialRef, merge: true)
+            
+            // 4. Save individual review if content exists
+            if let content = userReview, !content.isEmpty {
+                let review = MovieReview(
+                    userId: user.id,
+                    username: user.username ?? user.name,
+                    userPhoto: user.photoURL?.absoluteString,
+                    content: content,
+                    rating: rating,
+                    genreTags: genreTags,
+                    timestamp: Date()
+                )
+                let reviewData = try! Firestore.Encoder().encode(review)
+                transaction.setData(reviewData, forDocument: reviewRef)
+            }
+            
+            return nil
+        }
+    }
+    
+    func fetchMovieReviews(movieId: Int) async throws -> [MovieReview] {
+        let snapshot = try await db.collection("movieSocial")
+            .document("\(movieId)")
+            .collection("reviews")
+            .order(by: "timestamp", descending: true)
+            .limit(to: 30)
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { doc -> MovieReview? in
+            return try? doc.data(as: MovieReview.self)
+        }
+    }
 }
 
 // Helper Model for History

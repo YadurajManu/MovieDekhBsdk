@@ -164,39 +164,8 @@ struct MovieDetailView: View {
                                     }
                                 }
                                 
-                                // User Rating Section
-                                VStack(alignment: .leading, spacing: 16) {
-                                    HStack {
-                                        Image(systemName: "heart.fill")
-                                            .foregroundColor(.appPrimary)
-                                        Text("YOUR RATING")
-                                            .font(.system(size: 14, weight: .black))
-                                            .kerning(1)
-                                    }
-                                    
-                                    HStack {
-                                        InteractiveRatingView(rating: $viewModel.userRating, starSize: 28, starSpacing: 12) { rating in
-                                            Task {
-                                                await viewModel.rateMovie(rating: rating)
-                                            }
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        if let rating = viewModel.userRating {
-                                            Text("\(rating)/5")
-                                                .font(.system(size: 16, weight: .black))
-                                                .foregroundColor(.appPrimary)
-                                        }
-                                    }
-                                    .padding(20)
-                                    .background(Color.white.opacity(0.03))
-                                    .cornerRadius(20)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                                    )
-                                }
+                                // Cinephile Community Section
+                                MovieCommunitySection(movieId: movie.id)
                                 
                                 // Where to Watch
                                 if let providers = viewModel.watchProviders {
