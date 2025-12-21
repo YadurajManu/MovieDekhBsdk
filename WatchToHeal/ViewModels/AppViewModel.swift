@@ -3,6 +3,7 @@ import Combine
 import FirebaseAuth
 
 class AppViewModel: ObservableObject {
+    static let shared = AppViewModel()
     @Published var isAuthenticated: Bool = false
     @Published var hasCompletedOnboarding: Bool = false
     @Published var currentUser: User?
@@ -85,7 +86,28 @@ class AppViewModel: ObservableObject {
     
     func signOut() {
         try? AuthenticationService.shared.signOut()
+        self.userProfile = nil
+        self.isAuthenticated = false
         hasCompletedOnboarding = false
         UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+    }
+    
+    // MARK: - Admin Flow
+    func adminLogin() {
+        // Create a mock super-admin profile
+        let mockAdmin = UserProfile(
+            id: "admin_super_user",
+            username: "admin",
+            name: "Super Admin",
+            email: "admin@gmail.com",
+            bio: "System Administrator",
+            photoURL: nil,
+            topFavorites: [],
+            isAdmin: true
+        )
+        
+        self.userProfile = mockAdmin
+        self.isAuthenticated = true
+        self.hasCompletedOnboarding = true // Admins bypass onboarding
     }
 }

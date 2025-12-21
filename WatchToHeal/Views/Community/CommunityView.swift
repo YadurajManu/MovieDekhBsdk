@@ -13,6 +13,7 @@ struct CommunityView: View {
     enum CommunityScope: String, CaseIterable {
         case members = "Members"
         case lists = "Curated Lists"
+        case pulse = "Global Pulse"
     }
     
     var body: some View {
@@ -82,8 +83,10 @@ struct CommunityView: View {
                     
                     if communityScope == .members {
                         memberSearchContent
-                    } else {
+                    } else if communityScope == .lists {
                         communityListsContent
+                    } else {
+                        GlobalPollsView()
                     }
                 }
             }

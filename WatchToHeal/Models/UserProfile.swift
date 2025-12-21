@@ -8,6 +8,7 @@ struct UserProfile: Codable, Identifiable, Hashable {
     var bio: String
     var photoURL: URL?
     var topFavorites: [Movie]
+    var isAdmin: Bool = false
     
     // Social Stats
     var followerCount: Int = 0
@@ -25,7 +26,8 @@ struct UserProfile: Codable, Identifiable, Hashable {
          email: String, 
          bio: String = "", 
          photoURL: URL? = nil, 
-         topFavorites: [Movie] = []) {
+         topFavorites: [Movie] = [],
+         isAdmin: Bool = false) {
         self.id = id
         self.username = username
         self.name = name
@@ -33,6 +35,7 @@ struct UserProfile: Codable, Identifiable, Hashable {
         self.bio = bio
         self.photoURL = photoURL
         self.topFavorites = topFavorites
+        self.isAdmin = isAdmin
         self.followerCount = 0
         self.followingCount = 0
         self.isNotificationEnabled = true
@@ -48,6 +51,7 @@ struct UserProfile: Codable, Identifiable, Hashable {
          bio: String, 
          photoURL: URL?, 
          topFavorites: [Movie],
+         isAdmin: Bool = false,
          followerCount: Int = 0,
          followingCount: Int = 0,
          isNotificationEnabled: Bool,

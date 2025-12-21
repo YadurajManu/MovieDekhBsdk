@@ -969,8 +969,7 @@ class FirestoreService {
     
     func updateRecommendationReaction(recommendationId: String, reaction: String) async throws {
         try await db.collection("recommendations").document(recommendationId).updateData([
-            "reaction": reaction,
-            "isRead": true
+            "reaction": reaction
         ])
     }
     
@@ -978,6 +977,74 @@ class FirestoreService {
         try await db.collection("recommendations").document(recommendationId).updateData([
             "isRead": true
         ])
+    }
+    
+    // MARK: - Global Polls
+    func createPoll(poll: MoviePoll) async throws {
+        _ = try db.collection("polls").addDocument(from: poll)
+    }
+    
+    func fetchAllPollsAdmin() async throws -> [MoviePoll] {
+        let snapshot = try await db.collection("polls")
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: MoviePoll.self) }
+    }
+    
+    func fetchActivePolls() async throws -> [MoviePoll] {
+        let snapshot = try await db.collection("polls")
+            .order(by: "createdAt", descending: true)
+            .limit(to: 5)
+            .getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: MoviePoll.self) }
+    }
+    
+    func submitPollVote(pollId: String, optionIndex: Int, userId: String) async throws {
+        let pollRef = db.collection("polls").document(pollId)
+        
+        try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let pollDocument: DocumentSnapshot
+            do {
+                pollDocument = try transaction.getDocument(pollRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            guard var poll = try? pollDocument.data(as: MoviePoll.self) else {
+                let error = NSError(domain: "FirestoreService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Poll not found"])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            if poll.isFinalized { return nil }
+            if let expires = poll.expiresAt, expires < Date() { return nil }
+            if poll.votedUserIds.contains(userId) { return nil }
+            
+            var newVotes = poll.votes
+            if optionIndex < newVotes.count {
+                newVotes[optionIndex] += 1
+            }
+            
+            var newVotedIds = poll.votedUserIds
+            newVotedIds.append(userId)
+            
+            transaction.updateData([
+                "votes": newVotes,
+                "votedUserIds": newVotedIds
+            ], forDocument: pollRef)
+            
+            return nil
+        })
+    }
+    
+    func fetchAllUsers() async throws -> [UserProfile] {
+        let snapshot = try await db.collection("users").getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: UserProfile.self) }
+    }
+    
+    func updateUserRole(userId: String, isAdmin: Bool) async throws {
+        try await db.collection("users").document(userId).updateData(["isAdmin": isAdmin])
     }
 }
 

@@ -15,6 +15,7 @@ struct ProfileView: View {
     @StateObject private var traktService = TraktService.shared
     @State private var showEditProfile = false
     @State private var showSettings = false
+    @State private var showAdminDashboard = false
     @State private var showLogOutAlert = false
     @State private var showTraktAuth = false
     @State private var showStatsDetail = false
@@ -360,6 +361,15 @@ struct ProfileView: View {
                                 menuItem(icon: "info.circle.fill", title: "About WatchToHeal")
                             }
                             
+                            // ADMIN TOOLS (Conditional)
+                            if appViewModel.userProfile?.isAdmin ?? false {
+                                menuSection(title: "Super Admin") {
+                                    Button(action: { showAdminDashboard = true }) {
+                                        menuItem(icon: "crown.fill", title: "Admin Terminal")
+                                    }
+                                }
+                            }
+                            
                             // LOGOUT
                             Button(action: { showLogOutAlert = true }) {
                                 GlassCard(cornerRadius: 16) {
@@ -379,6 +389,9 @@ struct ProfileView: View {
                     }
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showAdminDashboard) {
+            AdminDashboardView()
         }
         .fullScreenCover(isPresented: $showStatsDetail) {
             StatsDetailView()

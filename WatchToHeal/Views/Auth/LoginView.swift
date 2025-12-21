@@ -9,6 +9,7 @@ import SwiftUI
 import FirebaseAuth
 
 struct LoginView: View {
+    @EnvironmentObject var appViewModel: AppViewModel
     @Environment(\.dismiss) var dismiss
     @State private var email = ""
     @State private var password = ""
@@ -120,9 +121,12 @@ struct LoginView: View {
                             }
                         }
                         
-                        // Action Buttons
                         VStack(spacing: 16) {
                             Button(action: {
+                                if email == "admin@gmail.com" && password == "admin@1234" {
+                                    appViewModel.adminLogin()
+                                    return
+                                }
                                 Task {
                                     do {
                                         UserDefaults.standard.set(isRememberMeChecked, forKey: "rememberMe")
