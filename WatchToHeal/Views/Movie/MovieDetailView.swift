@@ -165,7 +165,7 @@ struct MovieDetailView: View {
                                 }
                                 
                                 // Cinephile Community Section
-                                MovieCommunitySection(movieId: movie.id)
+                                MovieCommunitySection(movieId: movie.id, movieTitle: movie.title, moviePoster: movie.posterPath)
                                 
                                 // Where to Watch
                                 if let providers = viewModel.watchProviders {

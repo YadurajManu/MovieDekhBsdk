@@ -249,6 +249,10 @@ struct ProfileView: View {
                             
                             // DISCOVERY & SHARING (New)
                             menuSection(title: "Community") {
+                                NavigationLink(destination: UserActivityView(userId: appViewModel.userProfile?.id ?? "")) {
+                                    menuItem(icon: "clock.arrow.circlepath", title: "My Activity Log")
+                                }
+                                Divider().background(Color.white.opacity(0.1))
                                 NavigationLink(destination: FriendsListView()) {
                                     menuItem(icon: "person.2.fill", title: "My Friends")
                                 }
@@ -317,6 +321,15 @@ struct ProfileView: View {
                             
                             // SYSTEM
                             menuSection(title: "System & Storage") {
+                                Button(action: {
+                                    Task {
+                                        await WatchlistManager.shared.syncWithFirestore()
+                                        await HistoryManager.shared.loadHistory()
+                                    }
+                                }) {
+                                    menuItem(icon: "arrow.triangle.2.circlepath.icloud", title: "Cloud Sync & Recovery")
+                                }
+                                Divider().background(Color.white.opacity(0.1))
                                 NavigationLink(destination: PreferenceSettingsView()) {
                                     menuItem(icon: "slider.horizontal.3", title: "Preferences")
                                 }

@@ -38,9 +38,13 @@ class MovieSocialViewModel: ObservableObject {
     
     private let firestoreService = FirestoreService.shared
     private let movieId: Int
+    private let movieTitle: String
+    private let moviePoster: String?
     
-    init(movieId: Int) {
+    init(movieId: Int, movieTitle: String, moviePoster: String?) {
         self.movieId = movieId
+        self.movieTitle = movieTitle
+        self.moviePoster = moviePoster
     }
     
     func loadSocialData() async {
@@ -65,6 +69,8 @@ class MovieSocialViewModel: ObservableObject {
         do {
             try await firestoreService.submitMovieVote(
                 movieId: movieId,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
                 rating: rating,
                 genreTags: genreTags,
                 userReview: review,
@@ -80,7 +86,13 @@ class MovieSocialViewModel: ObservableObject {
     
     func toggleLike(reviewId: String, userId: String) async {
         do {
-            try await firestoreService.toggleReviewLike(movieId: movieId, reviewId: reviewId, userId: userId)
+            try await firestoreService.toggleReviewLike(
+                movieId: movieId,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
+                reviewId: reviewId,
+                userId: userId
+            )
             // Optimistic update or refresh
             await loadSocialData()
         } catch {
@@ -90,7 +102,14 @@ class MovieSocialViewModel: ObservableObject {
     
     func postReply(reviewId: String, content: String, user: UserProfile) async {
         do {
-            try await firestoreService.submitMovieReply(movieId: movieId, reviewId: reviewId, content: content, user: user)
+            try await firestoreService.submitMovieReply(
+                movieId: movieId,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
+                reviewId: reviewId,
+                content: content,
+                user: user
+            )
             // Refresh data to show new reply count and potentially fetch replies
             await loadSocialData()
         } catch {

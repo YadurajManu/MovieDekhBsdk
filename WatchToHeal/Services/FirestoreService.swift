@@ -36,11 +36,13 @@ class FirestoreService {
     
     // MARK: - Watchlist
     func addToWatchlist(userId: String, movie: Movie) async throws {
-        // Only save minimal data needed for list
+        // Save comprehensive data needed for list visibility
         var movieData: [String: Any] = [
             "id": movie.id,
             "title": movie.title,
             "posterPath": movie.posterPath ?? "",
+            "overview": movie.overview,
+            "releaseDate": movie.releaseDate,
             "voteAverage": movie.voteAverage,
             "addedAt": Timestamp()
         ]
@@ -524,7 +526,7 @@ class FirestoreService {
         return MovieSocialStats()
     }
     
-    func submitMovieVote(movieId: Int, rating: String, genreTags: [String], userReview: String?, isSpoiler: Bool, user: UserProfile) async throws {
+    func submitMovieVote(movieId: Int, movieTitle: String, moviePoster: String?, rating: String, genreTags: [String], userReview: String?, isSpoiler: Bool, user: UserProfile) async throws {
         let socialRef = db.collection("movieSocial").document("\(movieId)")
         let reviewRef = socialRef.collection("reviews").document(user.id)
         
@@ -569,12 +571,28 @@ class FirestoreService {
                 isSpoiler: isSpoiler,
                 likesCount: 0,
                 repliesCount: 0,
-                likedBy: []
+                likedBy: [],
+                movieTitle: movieTitle,
+                moviePoster: moviePoster
             )
             let reviewData = try! Firestore.Encoder().encode(review)
             transaction.setData(reviewData, forDocument: reviewRef)
             
             return nil
+        }
+        
+        // Log Activity (OUTSIDE transaction)
+        Task {
+            let activity = UserActivity(
+                userId: user.id,
+                type: .rating,
+                movieId: movieId,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
+                content: userReview,
+                rating: rating
+            )
+            try? await self.logActivity(userId: user.id, activity: activity)
         }
     }
     
@@ -591,12 +609,14 @@ class FirestoreService {
         }
     }
     
-    func toggleReviewLike(movieId: Int, reviewId: String, userId: String) async throws {
+    func toggleReviewLike(movieId: Int, movieTitle: String, moviePoster: String?, reviewId: String, userId: String) async throws {
         let reviewRef = db.collection("movieSocial")
             .document("\(movieId)")
             .collection("reviews")
             .document(reviewId)
             
+        var isLiking = false
+        
         try await db.runTransaction { (transaction, _) -> Any? in
             let reviewDoc: DocumentSnapshot
             do {
@@ -606,6 +626,8 @@ class FirestoreService {
             }
             
             guard var review = try? reviewDoc.data(as: MovieReview.self) else { return nil }
+            
+            isLiking = !review.likedBy.contains(userId)
             
             if review.likedBy.contains(userId) {
                 review.likedBy.removeAll { $0 == userId }
@@ -617,11 +639,26 @@ class FirestoreService {
             
             let data = try! Firestore.Encoder().encode(review)
             transaction.setData(data, forDocument: reviewRef, merge: true)
+            
             return nil
+        }
+        
+        // Log Activity (OUTSIDE transaction)
+        if isLiking {
+            Task {
+                let activity = UserActivity(
+                    userId: userId,
+                    type: .like,
+                    movieId: movieId,
+                    movieTitle: movieTitle,
+                    moviePoster: moviePoster
+                )
+                try? await self.logActivity(userId: userId, activity: activity)
+            }
         }
     }
     
-    func submitMovieReply(movieId: Int, reviewId: String, content: String, user: UserProfile) async throws {
+    func submitMovieReply(movieId: Int, movieTitle: String, moviePoster: String?, reviewId: String, content: String, user: UserProfile) async throws {
         let reviewRef = db.collection("movieSocial")
             .document("\(movieId)")
             .collection("reviews")
@@ -658,6 +695,19 @@ class FirestoreService {
             
             return nil
         }
+        
+        // Log Activity (OUTSIDE transaction)
+        Task {
+            let activity = UserActivity(
+                userId: user.id,
+                type: .reply,
+                movieId: movieId,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
+                content: content
+            )
+            try? await self.logActivity(userId: user.id, activity: activity)
+        }
     }
     
     func fetchMovieReplies(movieId: Int, reviewId: String) async throws -> [MovieReply] {
@@ -671,6 +721,221 @@ class FirestoreService {
             
         return snapshot.documents.compactMap { doc -> MovieReply? in
             return try? doc.data(as: MovieReply.self)
+        }
+    }
+    
+    // MARK: - User Activity & Stats
+    func logActivity(userId: String, activity: UserActivity) async throws {
+        let activityRef = db.collection("users").document(userId).collection("activities").document()
+        try activityRef.setData(from: activity)
+        
+        // Update stats
+        try await updateUserStats(userId: userId, activityType: activity.type, rating: activity.rating)
+    }
+    
+    func fetchUserActivities(userId: String, limit: Int = 50) async throws -> [UserActivity] {
+        let snapshot = try await db.collection("users")
+            .document(userId)
+            .collection("activities")
+            .order(by: "timestamp", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+            
+        return snapshot.documents.compactMap { try? $0.data(as: UserActivity.self) }
+    }
+    
+    func getUserStats(userId: String) async throws -> UserStats {
+        let docRef = db.collection("users").document(userId).collection("stats").document("main")
+        let doc = try await docRef.getDocument()
+        
+        if doc.exists {
+            return (try? doc.data(as: UserStats.self)) ?? UserStats()
+        }
+        return UserStats()
+    }
+    
+    /// Synchronizes past community reviews into the activity log
+    func syncPastActivities(userId: String) async throws {
+        // 1. Fetch existing activities to avoid duplicates
+        let existingActivities = try await fetchUserActivities(userId: userId, limit: 1000)
+        let existingRatingKeys = Set(existingActivities.filter { $0.type == .rating }.map { String($0.movieId) })
+        
+        // 2. Fetch watch history to use as a title/poster cache
+        let history = try? await fetchHistory(userId: userId)
+        let historyCache = Dictionary(uniqueKeysWithValues: (history ?? []).map { ("\($0.id)", ($0.title, $0.posterPath)) })
+        
+        // 3. Query all reviews by this user across all movies
+        let snapshot = try await db.collectionGroup("reviews")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments()
+            
+        for doc in snapshot.documents {
+            // The movie ID is the parent document ID
+            guard let movieIdString = doc.reference.parent.parent?.documentID,
+                  !existingRatingKeys.contains(movieIdString) else { continue }
+            
+            guard let review = try? doc.data(as: MovieReview.self),
+                  let movieId = Int(movieIdString) else { continue }
+            
+            // Try to get movie info from review itself (new format) or history cache (old format)
+            var title = review.movieTitle ?? "Movie \(movieId)"
+            var poster = review.moviePoster
+            
+            if let cached = historyCache[movieIdString] {
+                title = cached.0
+                poster = cached.1
+            }
+            
+            // Create activity
+            let activity = UserActivity(
+                userId: userId,
+                type: .rating,
+                movieId: movieId,
+                movieTitle: title,
+                moviePoster: poster,
+                content: review.content,
+                rating: review.rating,
+                timestamp: review.timestamp
+            )
+            
+            // Save activity
+            let activityRef = db.collection("users").document(userId).collection("activities").document()
+            try activityRef.setData(from: activity)
+            
+            // Update stats for each newly found review
+            try? await self.updateUserStats(userId: userId, activityType: .rating, rating: review.rating)
+        }
+        
+        // 4. Query all REPLIES by this user
+        let repliesSnapshot = try await db.collectionGroup("replies")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments()
+            
+        for doc in repliesSnapshot.documents {
+            // Check if activity already exists
+            let existing = try await db.collection("users").document(userId).collection("activities")
+                .whereField("type", isEqualTo: ActivityType.reply.rawValue)
+                .whereField("timestamp", isEqualTo: doc.get("timestamp") ?? Date())
+                .getDocuments()
+            
+            if existing.isEmpty {
+                if let reply = try? doc.data(as: MovieReply.self) {
+                    // Try to get movie info from history or parent chain
+                    // For simplicity in replies, we'll try to find the movie ID from the path
+                    let path = doc.reference.path // "movieSocial/123/reviews/abc/replies/xyz"
+                    let parts = path.components(separatedBy: "/")
+                    if parts.count >= 2, let movieId = Int(parts[1]) {
+                        var title = "Movie \(movieId)"
+                        var poster: String? = nil
+                        if let cached = historyCache["\(movieId)"] {
+                            title = cached.0
+                            poster = cached.1
+                        }
+                        
+                        let activity = UserActivity(
+                            userId: userId,
+                            type: .reply,
+                            movieId: movieId,
+                            movieTitle: title,
+                            moviePoster: poster,
+                            content: reply.content,
+                            timestamp: reply.timestamp
+                        )
+                        try db.collection("users").document(userId).collection("activities").addDocument(from: activity)
+                        try? await self.updateUserStats(userId: userId, activityType: .reply)
+                    }
+                }
+            }
+        }
+        
+        // 5. Query all LIKES (Reviews the user liked)
+        let likesSnapshot = try await db.collectionGroup("reviews")
+            .whereField("likedBy", arrayContains: userId)
+            .getDocuments()
+            
+        for doc in likesSnapshot.documents {
+            let movieIdString = doc.reference.parent.parent?.documentID ?? ""
+            guard let movieId = Int(movieIdString) else { continue }
+            
+            // Check if "like" activity already exists for this movie
+            // Note: This is simpler than checking specific review IDs for now
+            let existing = try await db.collection("users").document(userId).collection("activities")
+                .whereField("type", isEqualTo: ActivityType.like.rawValue)
+                .whereField("movieId", isEqualTo: movieId)
+                .getDocuments()
+            
+            if existing.isEmpty {
+                var title = "Movie \(movieId)"
+                var poster: String? = nil
+                if let cached = historyCache[movieIdString] {
+                    title = cached.0
+                    poster = cached.1
+                }
+                
+                let activity = UserActivity(
+                    userId: userId,
+                    type: .like,
+                    movieId: movieId,
+                    movieTitle: title,
+                    moviePoster: poster
+                )
+                try db.collection("users").document(userId).collection("activities").addDocument(from: activity)
+                try? await self.updateUserStats(userId: userId, activityType: .like)
+            }
+        }
+    }
+    
+    private func updateUserStats(userId: String, activityType: ActivityType, rating: String? = nil) async throws {
+        let statsRef = db.collection("users").document(userId).collection("stats").document("main")
+        
+        try await db.runTransaction { (transaction, _) -> Any? in
+            let statsDoc: DocumentSnapshot
+            do {
+                statsDoc = try transaction.getDocument(statsRef)
+            } catch {
+                return nil
+            }
+            
+            var stats = (try? statsDoc.data(as: UserStats.self)) ?? UserStats()
+            
+            // Update counters
+            switch activityType {
+            case .rating:
+                stats.totalRatings += 1
+                if let r = rating {
+                    stats.ratingBreakdown[r, default: 0] += 1
+                }
+            case .comment:
+                stats.totalComments += 1
+            case .reply:
+                stats.totalReplies += 1
+            case .like:
+                stats.totalLikes += 1
+            }
+            
+            // Update streak
+            let now = Date()
+            if let lastDate = stats.lastActivityDate {
+                let calendar = Calendar.current
+                if calendar.isDateInYesterday(lastDate) {
+                    stats.currentStreak += 1
+                } else if !calendar.isDateInToday(lastDate) {
+                    stats.currentStreak = 1
+                }
+                // If already active today, do nothing to streak
+            } else {
+                stats.currentStreak = 1
+            }
+            
+            if stats.currentStreak > stats.longestStreak {
+                stats.longestStreak = stats.currentStreak
+            }
+            
+            stats.lastActivityDate = now
+            
+            let statsData = try! Firestore.Encoder().encode(stats)
+            transaction.setData(statsData, forDocument: statsRef, merge: true)
+            return nil
         }
     }
 }

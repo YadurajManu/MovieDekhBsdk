@@ -18,6 +18,36 @@ class WatchlistManager: ObservableObject {
     
     private init() {
         loadWatchlist()
+        Task {
+            await syncWithFirestore()
+        }
+    }
+    
+    func syncWithFirestore() async {
+        guard let userValue = Auth.auth().currentUser else { return }
+        do {
+            let cloudWatchlist = try await FirestoreService.shared.fetchWatchlist(userId: userValue.uid)
+            
+            await MainActor.run {
+                // Merge cloud data with local data, prioritizing cloud for now
+                // but ensuring uniqueness by ID
+                var merged = cloudWatchlist
+                for localMovie in self.watchlistMovies {
+                    if !merged.contains(where: { $0.id == localMovie.id }) {
+                        merged.append(localMovie)
+                        // Proactively add local-only movies to cloud
+                        Task {
+                            try? await FirestoreService.shared.addToWatchlist(userId: userValue.uid, movie: localMovie)
+                        }
+                    }
+                }
+                
+                self.watchlistMovies = merged.sorted(by: { $0.id > $1.id }) // Simple sort
+                self.saveWatchlist()
+            }
+        } catch {
+            print("Error syncing watchlist: \(error)")
+        }
     }
     
     func isInWatchlist(_ movieId: Int) -> Bool {
@@ -27,10 +57,26 @@ class WatchlistManager: ObservableObject {
     func toggleWatchlist(_ movie: Movie) {
         if let index = watchlistMovies.firstIndex(where: { $0.id == movie.id }) {
             watchlistMovies.remove(at: index)
+            removeFromFirestore(movie.id)
         } else {
             watchlistMovies.insert(movie, at: 0)
+            addToFirestore(movie)
         }
         saveWatchlist()
+    }
+    
+    private func addToFirestore(_ movie: Movie) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        Task {
+            try? await FirestoreService.shared.addToWatchlist(userId: uid, movie: movie)
+        }
+    }
+    
+    private func removeFromFirestore(_ movieId: Int) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        Task {
+            try? await FirestoreService.shared.removeFromWatchlist(userId: uid, movieId: movieId)
+        }
     }
     
     func addToWatchlist(_ movie: Movie) {
@@ -46,11 +92,7 @@ class WatchlistManager: ObservableObject {
         }
         
         // Sync to Firestore
-        if let user = AuthenticationService.shared.user {
-            Task {
-                try? await FirestoreService.shared.addToWatchlist(userId: user.uid, movie: movie)
-            }
-        }
+        addToFirestore(movie)
     }
     
     func removeFromWatchlist(_ movieId: Int) {
@@ -61,11 +103,7 @@ class WatchlistManager: ObservableObject {
         NotificationManager.shared.cancelAlert(for: movieId)
         
         // Sync to Firestore
-        if let user = AuthenticationService.shared.user {
-            Task {
-                try? await FirestoreService.shared.removeFromWatchlist(userId: user.uid, movieId: movieId)
-            }
-        }
+        removeFromFirestore(movieId)
     }
     
     func rateMovie(_ movie: Movie, rating: Int) {

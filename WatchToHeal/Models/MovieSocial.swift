@@ -33,6 +33,8 @@ struct MovieReview: Codable, Identifiable {
     var likesCount: Int
     var repliesCount: Int
     var likedBy: [String]
+    var movieTitle: String? // Added for activity log backfill
+    var moviePoster: String? // Added for activity log backfill
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -47,6 +49,8 @@ struct MovieReview: Codable, Identifiable {
         case likesCount
         case repliesCount
         case likedBy
+        case movieTitle
+        case moviePoster
     }
     
     init(from decoder: Decoder) throws {
@@ -62,9 +66,11 @@ struct MovieReview: Codable, Identifiable {
         likesCount = try container.decodeIfPresent(Int.self, forKey: .likesCount) ?? 0
         repliesCount = try container.decodeIfPresent(Int.self, forKey: .repliesCount) ?? 0
         likedBy = try container.decodeIfPresent([String].self, forKey: .likedBy) ?? []
+        movieTitle = try container.decodeIfPresent(String.self, forKey: .movieTitle)
+        moviePoster = try container.decodeIfPresent(String.self, forKey: .moviePoster)
     }
     
-    init(userId: String, username: String, userPhoto: String?, content: String, rating: String, genreTags: [String], timestamp: Date, isSpoiler: Bool, likesCount: Int, repliesCount: Int, likedBy: [String]) {
+    init(userId: String, username: String, userPhoto: String?, content: String, rating: String, genreTags: [String], timestamp: Date, isSpoiler: Bool, likesCount: Int, repliesCount: Int, likedBy: [String], movieTitle: String? = nil, moviePoster: String? = nil) {
         self.userId = userId
         self.username = username
         self.userPhoto = userPhoto
@@ -76,6 +82,8 @@ struct MovieReview: Codable, Identifiable {
         self.likesCount = likesCount
         self.repliesCount = repliesCount
         self.likedBy = likedBy
+        self.movieTitle = movieTitle
+        self.moviePoster = moviePoster
     }
 }
 

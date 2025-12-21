@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MovieCommunitySection: View {
     let movieId: Int
+    let movieTitle: String
+    let moviePoster: String?
     @StateObject private var viewModel: MovieSocialViewModel
     @EnvironmentObject var appViewModel: AppViewModel
     
@@ -12,9 +14,11 @@ struct MovieCommunitySection: View {
     @State private var isExpandingSubmission = false
     @State private var showSuccessMessage = false
     
-    init(movieId: Int) {
+    init(movieId: Int, movieTitle: String, moviePoster: String?) {
         self.movieId = movieId
-        _viewModel = StateObject(wrappedValue: MovieSocialViewModel(movieId: movieId))
+        self.movieTitle = movieTitle
+        self.moviePoster = moviePoster
+        _viewModel = StateObject(wrappedValue: MovieSocialViewModel(movieId: movieId, movieTitle: movieTitle, moviePoster: moviePoster))
     }
     
     var body: some View {
