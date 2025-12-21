@@ -5,58 +5,48 @@ struct CineScaleRatingView: View {
     let onRatingSelected: (String) -> Void
     
     private let ratings = [
-        ("absolute", "ABSOLUTE CINEMA", Color.orange, "crown.fill"),
-        ("awaara", "AWAARA CINEMA", Color.blue, "person.fill.questionmark"),
-        ("bakwas", "BAKWAS CINEMA", Color.red, "trash.fill")
+        (id: "absolute", title: "Loved", subtitle: "Absolute", color: Color.orange, icon: "heart.fill"),
+        (id: "awaara", title: "Meh", subtitle: "Awaara", color: Color.blue, icon: "hand.thumbsup.fill"),
+        (id: "bakwas", title: "Bad", subtitle: "Bakwas", color: Color.red, icon: "hand.thumbsdown.fill")
     ]
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("RATE THE VIBE")
-                .font(.system(size: 10, weight: .black))
-                .tracking(2)
-                .foregroundColor(.appPrimary)
-            
-            HStack(spacing: 12) {
-                ForEach(ratings, id: \.0) { id, label, color, icon in
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                            selectedRating = id
-                            onRatingSelected(id)
-                        }
-                    }) {
-                        VStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(selectedRating == id ? color : Color.white.opacity(0.05))
-                                    .frame(width: 50, height: 50)
-                                
-                                Image(systemName: icon)
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(selectedRating == id ? .black : .white)
-                            }
-                            
-                            Text(label.split(separator: " ").first ?? "")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(selectedRating == id ? color : .appTextSecondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(selectedRating == id ? color.opacity(0.1) : Color.clear)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(selectedRating == id ? color.opacity(0.5) : Color.white.opacity(0.05), lineWidth: 1)
-                        )
+        HStack(spacing: 8) {
+            ForEach(ratings, id: \.id) { rating in
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        selectedRating = rating.id
+                        onRatingSelected(rating.id)
                     }
-                    .scaleEffect(selectedRating == id ? 1.05 : 1.0)
+                }) {
+                    VStack(spacing: 6) {
+                        Image(systemName: rating.icon)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(selectedRating == rating.id ? rating.color : .white.opacity(0.4))
+                        
+                        VStack(spacing: 2) {
+                            Text(rating.title.uppercased())
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(selectedRating == rating.id ? rating.color : .white)
+                            
+                            Text(rating.subtitle)
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white.opacity(0.3))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(selectedRating == rating.id ? rating.color.opacity(0.15) : Color.white.opacity(0.04))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(selectedRating == rating.id ? rating.color.opacity(0.5) : Color.white.opacity(0.05), lineWidth: 1)
+                    )
                 }
+                .scaleEffect(selectedRating == rating.id ? 1.05 : 1.0)
             }
         }
-        .padding(20)
-        .background(Color.white.opacity(0.03))
-        .cornerRadius(24)
     }
 }

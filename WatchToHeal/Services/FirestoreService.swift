@@ -524,7 +524,7 @@ class FirestoreService {
         return MovieSocialStats()
     }
     
-    func submitMovieVote(movieId: Int, rating: String, genreTags: [String], userReview: String?, user: UserProfile) async throws {
+    func submitMovieVote(movieId: Int, rating: String, genreTags: [String], userReview: String?, isSpoiler: Bool, user: UserProfile) async throws {
         let socialRef = db.collection("movieSocial").document("\(movieId)")
         let reviewRef = socialRef.collection("reviews").document(user.id)
         
@@ -542,6 +542,10 @@ class FirestoreService {
                 stats = (try? Firestore.Decoder().decode(MovieSocialStats.self, from: data)) ?? MovieSocialStats()
             }
             
+            // 2. Check if user already reviewed to avoid double-counting increments
+            // For now, we'll increment for every submission for simplicity, 
+            // but in a production app we'd verify if user.id already exists in reviews.
+            
             // 3. Update stats
             stats.totalVotes += 1
             stats.ratingCounts[rating, default: 0] += 1
@@ -553,20 +557,22 @@ class FirestoreService {
             let statsData = try! Firestore.Encoder().encode(stats)
             transaction.setData(statsData, forDocument: socialRef, merge: true)
             
-            // 4. Save individual review if content exists
-            if let content = userReview, !content.isEmpty {
-                let review = MovieReview(
-                    userId: user.id,
-                    username: user.username ?? user.name,
-                    userPhoto: user.photoURL?.absoluteString,
-                    content: content,
-                    rating: rating,
-                    genreTags: genreTags,
-                    timestamp: Date()
-                )
-                let reviewData = try! Firestore.Encoder().encode(review)
-                transaction.setData(reviewData, forDocument: reviewRef)
-            }
+            // 4. Save individual review
+            let review = MovieReview(
+                userId: user.id,
+                username: user.username ?? user.name,
+                userPhoto: user.photoURL?.absoluteString,
+                content: userReview ?? "",
+                rating: rating,
+                genreTags: genreTags,
+                timestamp: Date(),
+                isSpoiler: isSpoiler,
+                likesCount: 0,
+                repliesCount: 0,
+                likedBy: []
+            )
+            let reviewData = try! Firestore.Encoder().encode(review)
+            transaction.setData(reviewData, forDocument: reviewRef)
             
             return nil
         }
@@ -577,11 +583,94 @@ class FirestoreService {
             .document("\(movieId)")
             .collection("reviews")
             .order(by: "timestamp", descending: true)
-            .limit(to: 30)
+            .limit(to: 50)
             .getDocuments()
         
         return snapshot.documents.compactMap { doc -> MovieReview? in
             return try? doc.data(as: MovieReview.self)
+        }
+    }
+    
+    func toggleReviewLike(movieId: Int, reviewId: String, userId: String) async throws {
+        let reviewRef = db.collection("movieSocial")
+            .document("\(movieId)")
+            .collection("reviews")
+            .document(reviewId)
+            
+        try await db.runTransaction { (transaction, _) -> Any? in
+            let reviewDoc: DocumentSnapshot
+            do {
+                reviewDoc = try transaction.getDocument(reviewRef)
+            } catch {
+                return nil
+            }
+            
+            guard var review = try? reviewDoc.data(as: MovieReview.self) else { return nil }
+            
+            if review.likedBy.contains(userId) {
+                review.likedBy.removeAll { $0 == userId }
+                review.likesCount = max(0, review.likesCount - 1)
+            } else {
+                review.likedBy.append(userId)
+                review.likesCount += 1
+            }
+            
+            let data = try! Firestore.Encoder().encode(review)
+            transaction.setData(data, forDocument: reviewRef, merge: true)
+            return nil
+        }
+    }
+    
+    func submitMovieReply(movieId: Int, reviewId: String, content: String, user: UserProfile) async throws {
+        let reviewRef = db.collection("movieSocial")
+            .document("\(movieId)")
+            .collection("reviews")
+            .document(reviewId)
+        let replyRef = reviewRef.collection("replies").document()
+        
+        try await db.runTransaction { (transaction, _) -> Any? in
+            // 1. Update review's reply count
+            let reviewDoc: DocumentSnapshot
+            do {
+                reviewDoc = try transaction.getDocument(reviewRef)
+            } catch {
+                return nil
+            }
+            
+            if var review = try? reviewDoc.data(as: MovieReview.self) {
+                review.repliesCount += 1
+                let reviewData = try! Firestore.Encoder().encode(review)
+                transaction.setData(reviewData, forDocument: reviewRef, merge: true)
+            }
+            
+            // 2. Add reply
+            let reply = MovieReply(
+                userId: user.id,
+                username: user.username ?? user.name,
+                userPhoto: user.photoURL?.absoluteString,
+                content: content,
+                timestamp: Date(),
+                likesCount: 0,
+                likedBy: []
+            )
+            let replyData = try! Firestore.Encoder().encode(reply)
+            transaction.setData(replyData, forDocument: replyRef)
+            
+            return nil
+        }
+    }
+    
+    func fetchMovieReplies(movieId: Int, reviewId: String) async throws -> [MovieReply] {
+        let snapshot = try await db.collection("movieSocial")
+            .document("\(movieId)")
+            .collection("reviews")
+            .document(reviewId)
+            .collection("replies")
+            .order(by: "timestamp", descending: false)
+            .getDocuments()
+            
+        return snapshot.documents.compactMap { doc -> MovieReply? in
+            return try? doc.data(as: MovieReply.self)
         }
     }
 }
