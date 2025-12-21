@@ -9,43 +9,53 @@ struct OnboardingContainerView: View {
             Color.appBackground.ignoresSafeArea()
             
             VStack {
-                // Header (Back Button & Progress)
-                HStack(spacing: 16) {
-                    if viewModel.currentStep != .personalDetails {
-                        Button(action: {
-                            viewModel.moveToPreviousStep()
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.appText)
-                                .frame(width: 36, height: 36)
-                                .background(Circle().fill(Color.white.opacity(0.1)))
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("STEP \(viewModel.currentStep.rawValue + 1) OF \(OnboardingStep.allCases.count)")
+                                .font(.system(size: 10, weight: .black))
+                                .kerning(1)
+                                .foregroundColor(.appPrimary)
+                            
+                            // Progress Segments
+                            HStack(spacing: 4) {
+                                ForEach(0..<OnboardingStep.allCases.count, id: \.self) { index in
+                                    Capsule()
+                                        .fill(index <= viewModel.currentStep.rawValue ? Color.appPrimary : Color.white.opacity(0.1))
+                                        .frame(height: 6)
+                                        .frame(maxWidth: .infinity)
+                                }
+                            }
                         }
-                    } else {
-                        Button(action: {
-                            appViewModel.signOut()
-                        }) {
-                            Text("Exit")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.appTextSecondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
-                        }
-                    }
-                    
-                    // Progress Bar
-                    HStack(spacing: 4) {
-                        ForEach(0..<OnboardingStep.allCases.count, id: \.self) { index in
-                            Rectangle()
-                                .fill(index <= viewModel.currentStep.rawValue ? Color.appPrimary : Color.appCardBackground)
-                                .frame(height: 4)
-                                .cornerRadius(2)
+                        
+                        if viewModel.currentStep == .personalDetails {
+                            Spacer()
+                            Button(action: {
+                                appViewModel.signOut()
+                            }) {
+                                Text("EXIT")
+                                    .font(.system(size: 10, weight: .black))
+                                    .foregroundColor(.white.opacity(0.4))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+                            }
+                        } else {
+                            Spacer()
+                            Button(action: {
+                                viewModel.moveToPreviousStep()
+                            }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .frame(width: 32, height: 32)
+                                    .background(Circle().fill(Color.white.opacity(0.05)))
+                            }
                         }
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 10)
+                .padding(.top, 12)
                 
                 // Steps
                 TabView(selection: $viewModel.currentStep) {

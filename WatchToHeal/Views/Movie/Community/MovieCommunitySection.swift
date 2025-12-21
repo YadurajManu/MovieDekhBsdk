@@ -22,16 +22,17 @@ struct MovieCommunitySection: View {
     }
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             // Header
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("YOUR TAKE")
-                        .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 32))
-                        .foregroundColor(.appText)
-                    Text("Select one rating, up to 3 tags")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white.opacity(0.4))
+                        .font(.system(size: 14, weight: .black))
+                        .kerning(2)
+                        .foregroundColor(.appPrimary)
+                    Text("Share your reaction with the community")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white.opacity(0.3))
                 }
                 Spacer()
             }
@@ -39,16 +40,17 @@ struct MovieCommunitySection: View {
             if showSuccessMessage {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("Added to community score")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundColor(.appPrimary)
+                        .font(.system(size: 14))
+                    Text("CONSENSUS UPDATED")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundColor(.appPrimary)
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 10)
                 .padding(.horizontal, 16)
-                .background(Color.green.opacity(0.1))
+                .background(Color.appPrimary.opacity(0.1))
                 .cornerRadius(12)
-                .transition(.scale.combined(with: .opacity))
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
             if viewModel.isLoading && viewModel.stats.totalVotes == 0 {
                 ProgressView().tint(.appPrimary)
@@ -61,17 +63,25 @@ struct MovieCommunitySection: View {
                         withAnimation { isExpandingSubmission = true }
                     }
                 } else if !showSuccessMessage {
-                    HStack {
-                        Image(systemName: "checkmark.seal.fill")
+                    HStack(spacing: 12) {
+                        Image(systemName: "hand.thumbsup.fill")
+                            .font(.system(size: 16))
                             .foregroundColor(.appPrimary)
-                        Text("You've contributed to the consensus")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white.opacity(0.4))
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("YOU'VE LOGGED THIS MOVIE")
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(.appText)
+                            Text("Your reaction is part of the pulse")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white.opacity(0.3))
+                        }
                         Spacer()
                     }
-                    .padding()
+                    .padding(16)
                     .background(Color.white.opacity(0.03))
-                    .cornerRadius(12)
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.04), lineWidth: 1))
                 }
                 
                 if isExpandingSubmission {

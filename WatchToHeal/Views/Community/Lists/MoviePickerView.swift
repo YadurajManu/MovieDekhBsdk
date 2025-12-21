@@ -36,7 +36,7 @@ struct MoviePickerView: View {
                     TextField("Search movies...", text: $searchViewModel.searchQuery)
                         .foregroundColor(.appText)
                         .textFieldStyle(PlainTextFieldStyle())
-                        .onChange(of: searchViewModel.searchQuery) { _ in
+                        .onChange(of: searchViewModel.searchQuery) { _, _ in
                             Task {
                                 await searchViewModel.search()
                             }

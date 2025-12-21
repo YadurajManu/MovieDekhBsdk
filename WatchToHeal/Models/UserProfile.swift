@@ -19,6 +19,7 @@ struct UserProfile: Codable, Identifiable, Hashable {
     var isNotificationEnabled: Bool
     var showAdultContent: Bool
     var preferredRegion: String
+    var streamingProviders: [Int] // IDs of preferred streaming services
     
     // Compatibility init for legacy calls or linker expectations
     init(id: String, 
@@ -42,6 +43,7 @@ struct UserProfile: Codable, Identifiable, Hashable {
         self.isNotificationEnabled = true
         self.showAdultContent = false
         self.preferredRegion = "US"
+        self.streamingProviders = []
     }
 
     // Full init
@@ -57,7 +59,8 @@ struct UserProfile: Codable, Identifiable, Hashable {
          followingCount: Int = 0,
          isNotificationEnabled: Bool,
          showAdultContent: Bool,
-         preferredRegion: String) {
+         preferredRegion: String,
+         streamingProviders: [Int]) {
         self.id = id
         self.username = username
         self.name = name
@@ -70,5 +73,6 @@ struct UserProfile: Codable, Identifiable, Hashable {
         self.isNotificationEnabled = isNotificationEnabled
         self.showAdultContent = showAdultContent
         self.preferredRegion = preferredRegion
+        self.streamingProviders = streamingProviders
     }
 }

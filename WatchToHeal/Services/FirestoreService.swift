@@ -136,6 +136,7 @@ class FirestoreService {
         let isNotificationEnabled = data["isNotificationEnabled"] as? Bool ?? true
         let showAdultContent = data["showAdultContent"] as? Bool ?? false
         let preferredRegion = data["preferredRegion"] as? String ?? "US"
+        let streamingProviders = data["streamingProviders"] as? [Int] ?? []
         
         return UserProfile(id: userId,
                           username: username,
@@ -148,7 +149,8 @@ class FirestoreService {
                           followingCount: followingCount,
                           isNotificationEnabled: isNotificationEnabled,
                           showAdultContent: showAdultContent,
-                          preferredRegion: preferredRegion)
+                          preferredRegion: preferredRegion,
+                          streamingProviders: streamingProviders)
     }
     
     // MARK: - Social Identity
@@ -198,6 +200,12 @@ class FirestoreService {
     
     func updateUserProfile(userId: String, data: [String: Any]) async throws {
         try await db.collection("users").document(userId).updateData(data)
+    }
+    
+    func updateStreamingProviders(userId: String, providerIds: [Int]) async throws {
+        try await db.collection("users").document(userId).updateData([
+            "streamingProviders": providerIds
+        ])
     }
     
     func updateTopFavorites(userId: String, movies: [Movie]) async throws {

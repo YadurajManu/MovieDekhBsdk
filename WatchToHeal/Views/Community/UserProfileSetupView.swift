@@ -52,7 +52,7 @@ struct UserProfileSetupView: View {
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
                                 .foregroundColor(.appText)
-                                .onChange(of: viewModel.username) { newValue in
+                                .onChange(of: viewModel.username) { oldValue, newValue in
                                     // Limit to letters, numbers and underscores
                                     let filtered = newValue.lowercased().filter { "abcdefghijklmnopqrstuvwxyz0123456789_".contains($0) }
                                     if filtered != newValue {
@@ -130,8 +130,8 @@ struct UserProfileSetupView: View {
                 .disabled(viewModel.isUsernameAvailable != true || viewModel.isSaving)
             }
         }
-        .onChange(of: viewModel.setupComplete) { complete in
-            if complete {
+        .onChange(of: viewModel.setupComplete) { oldValue, newValue in
+            if newValue {
                 appViewModel.fetchUserProfile() // Refresh local profile
                 dismiss()
             }

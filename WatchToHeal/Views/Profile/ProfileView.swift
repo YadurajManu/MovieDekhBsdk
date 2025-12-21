@@ -23,6 +23,7 @@ struct ProfileView: View {
     @State private var rotationOffset: CGFloat = 0
     @State private var showRecommendations = false
     @StateObject private var homeViewModel = HomeViewModel()
+    @StateObject private var streamingSyncViewModel = StreamingSyncViewModel()
     
     @MainActor
     private func shareTopMovies() {
@@ -151,6 +152,98 @@ struct ProfileView: View {
                         }
                         .padding(.horizontal)
                         
+                        // Newly Available Section
+                        if !streamingSyncViewModel.availableInWatchlist.isEmpty {
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("AVAILABLE TO STREAM")
+                                            .font(.system(size: 11, weight: .black))
+                                            .tracking(2)
+                                            .foregroundColor(.appPrimary)
+                                        Text("From Your Watchlist")
+                                            .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 28))
+                                            .foregroundColor(.appText)
+                                    }
+                                    Spacer()
+                                    
+                                    if streamingSyncViewModel.isChecking {
+                                        ProgressView().tint(.appPrimary)
+                                    } else {
+                                        Button(action: {
+                                            if let profile = appViewModel.userProfile {
+                                                Task { await streamingSyncViewModel.checkWatchlistAvailability(userProfile: profile) }
+                                            }
+                                        }) {
+                                            Image(systemName: "arrow.clockwise")
+                                                .font(.system(size: 14, weight: .bold))
+                                                .foregroundColor(.appPrimary)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(streamingSyncViewModel.availableInWatchlist) { availability in
+                                            NavigationLink(destination: MovieDetailView(movieId: availability.movie.id)) {
+                                                VStack(alignment: .leading, spacing: 10) {
+                                                    ZStack(alignment: .topTrailing) {
+                                                        CachedAsyncImage(url: availability.movie.posterURL) { image in
+                                                            image.resizable().aspectRatio(contentMode: .fill)
+                                                        } placeholder: {
+                                                            RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.1))
+                                                        }
+                                                        .frame(width: 140, height: 210)
+                                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                        
+                                                        // First provider logo
+                                                        if let firstProvider = availability.providers.first {
+                                                            CachedAsyncImage(url: firstProvider.logoURL) { image in
+                                                                image.resizable().aspectRatio(contentMode: .fit)
+                                                            } placeholder: {
+                                                                Color.black
+                                                            }
+                                                            .frame(width: 30, height: 30)
+                                                            .cornerRadius(6)
+                                                            .padding(8)
+                                                            .background(Color.black.opacity(0.5))
+                                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                            .offset(x: -8, y: 8)
+                                                        }
+                                                    }
+                                                    
+                                                    Text(availability.movie.title)
+                                                        .font(.system(size: 13, weight: .bold))
+                                                        .foregroundColor(.appText)
+                                                        .lineLimit(1)
+                                                        .frame(width: 140, alignment: .leading)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 24)
+                                }
+                            }
+                        } else if let profile = appViewModel.userProfile, !profile.streamingProviders.isEmpty {
+                             // Empty state or small refresh button if nothing found yet
+                             Button(action: {
+                                 Task { await streamingSyncViewModel.checkWatchlistAvailability(userProfile: profile) }
+                             }) {
+                                 HStack {
+                                     Image(systemName: "sparkles.tv")
+                                     Text(streamingSyncViewModel.isChecking ? "Checking availability..." : "Check Streaming Availability")
+                                         .font(.system(size: 12, weight: .bold))
+                                 }
+                                 .foregroundColor(.appPrimary)
+                                 .padding(.horizontal, 20)
+                                 .padding(.vertical, 10)
+                                 .background(Capsule().stroke(Color.appPrimary.opacity(0.3), lineWidth: 1))
+                             }
+                             .disabled(streamingSyncViewModel.isChecking)
+                             .padding(.top, -8)
+                        }
+                        
                         // Top 3 Favorites Section (3D Rotating Stack)
                         if let topMovies = appViewModel.userProfile?.topFavorites, !topMovies.isEmpty {
                             VStack(alignment: .leading, spacing: 20) {
@@ -249,6 +342,10 @@ struct ProfileView: View {
                                 Divider().background(Color.white.opacity(0.1))
                                 NavigationLink(destination: NotificationSettingsView()) {
                                     menuItem(icon: "bell.badge.fill", title: "Notifications")
+                                }
+                                Divider().background(Color.white.opacity(0.1))
+                                NavigationLink(destination: StreamingSettingsView()) {
+                                    menuItem(icon: "play.tv.fill", title: "Streaming Services")
                                 }
                             }
                             

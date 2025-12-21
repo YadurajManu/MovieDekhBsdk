@@ -2,17 +2,18 @@ import SwiftUI
 
 struct WatchProvidersView: View {
     let providers: TMDBService.WatchProvidersResponse.CountryProviders
+    var preferredProviderIds: Set<Int> = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             if let flatrate = providers.flatrate, !flatrate.isEmpty {
-                ProviderPremiumRow(title: "STREAM", providers: flatrate)
+                ProviderPremiumRow(title: "STREAM", providers: flatrate, preferredIds: preferredProviderIds)
             }
             if let rent = providers.rent, !rent.isEmpty {
-                ProviderPremiumRow(title: "RENT", providers: rent)
+                ProviderPremiumRow(title: "RENT", providers: rent, preferredIds: preferredProviderIds)
             }
             if let buy = providers.buy, !buy.isEmpty {
-                ProviderPremiumRow(title: "BUY", providers: buy)
+                ProviderPremiumRow(title: "BUY", providers: buy, preferredIds: preferredProviderIds)
             }
             
             // JustWatch Link
@@ -36,6 +37,7 @@ struct WatchProvidersView: View {
 struct ProviderPremiumRow: View {
     let title: String
     let providers: [TMDBService.WatchProvidersResponse.Provider]
+    var preferredIds: Set<Int> = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -48,6 +50,8 @@ struct ProviderPremiumRow: View {
                 HStack(spacing: 14) {
                     ForEach(providers) { provider in
                         VStack(spacing: 6) {
+                            let isPreferred = preferredIds.contains(provider.id)
+                            
                             CachedAsyncImage(url: provider.logoURL) { image in
                                 image
                                     .resizable()
@@ -57,11 +61,15 @@ struct ProviderPremiumRow: View {
                             }
                             .frame(width: 44, height: 44)
                             .cornerRadius(10)
-                            .shadow(color: .black.opacity(0.2), radius: 5, y: 3)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(isPreferred ? Color.appPrimary : Color.clear, lineWidth: 2)
+                            )
+                            .shadow(color: isPreferred ? .appPrimary.opacity(0.3) : .black.opacity(0.2), radius: 5, y: 3)
                             
                             Text(provider.providerName)
-                                .font(.system(size: 8, weight: .medium))
-                                .foregroundColor(.appTextSecondary)
+                                .font(.system(size: 8, weight: isPreferred ? .black : .medium))
+                                .foregroundColor(isPreferred ? .appPrimary : .appTextSecondary)
                                 .lineLimit(1)
                                 .frame(width: 44)
                         }

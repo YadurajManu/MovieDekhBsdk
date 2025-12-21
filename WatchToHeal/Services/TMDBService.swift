@@ -419,6 +419,18 @@ class TMDBService {
         return response.results[region]
     }
     
+    struct AllWatchProvidersResponse: Codable {
+        let results: [WatchProvidersResponse.Provider]
+    }
+    
+    func fetchAllWatchProviders(region: String = "US") async throws -> [WatchProvidersResponse.Provider] {
+        let urlString = "\(baseURL)/watch/providers/movie?api_key=\(apiKey)&language=en-US&watch_region=\(region)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(AllWatchProvidersResponse.self, from: data)
+        return response.results.sorted(by: { $0.displayPriority < $1.displayPriority })
+    }
+    
     // MARK: - Dedicated Discovery Methods
     
     /// Fetches movies releasing between today and X days from now

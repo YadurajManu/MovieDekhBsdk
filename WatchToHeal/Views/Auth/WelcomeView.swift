@@ -24,7 +24,7 @@ struct WelcomeView: View {
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .scaleEffect(currentPosterIndex == index ? 1.2 : 1.0)
                                 .offset(x: currentPosterIndex == index ? 20 : 0)
                                 .animation(.linear(duration: 8).repeatForever(autoreverses: true), value: currentPosterIndex)
@@ -121,9 +121,11 @@ struct WelcomeView: View {
     
     private func startPosterRotation() {
         timer = Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
-            withAnimation(.easeInOut(duration: 2.0)) {
-                if !viewModel.movies.isEmpty {
-                    currentPosterIndex = (currentPosterIndex + 1) % min(10, viewModel.movies.count)
+            Task { @MainActor in
+                withAnimation(.easeInOut(duration: 2.0)) {
+                    if !viewModel.movies.isEmpty {
+                        currentPosterIndex = (currentPosterIndex + 1) % min(10, viewModel.movies.count)
+                    }
                 }
             }
         }

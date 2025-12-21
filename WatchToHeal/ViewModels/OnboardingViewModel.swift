@@ -17,6 +17,13 @@ enum OnboardingStep: Int, CaseIterable {
     case result
 }
 
+enum OnboardingSentiment: String, Codable {
+    case loved = "loved"
+    case okay = "okay"
+    case disliked = "disliked"
+    case unseen = "unseen"
+}
+
 class OnboardingViewModel: ObservableObject {
     @Published var currentStep: OnboardingStep = .personalDetails
     @Published var progress: Double = 0.0
@@ -44,22 +51,60 @@ class OnboardingViewModel: ObservableObject {
     @Published var selectedRecognitionIds: Set<Int> = []
     @Published var likedMovies: Set<Int> = []
     @Published var dislikedMovies: Set<Int> = []
-    @Published var selectedContext: String?
+    @Published var selectedContexts: Set<String> = []
     @Published var selectedActors: Set<Int> = []
-    @Published var selectedVibe: String?
+    @Published var selectedVibes: Set<String> = []
     @Published var selectedEra: String?
     @Published var subtitlePreference: String?
     @Published var winnerId: Int?
     
     @Published var isLoading = false
 
-    // Personal Details
     @Published var name: String = ""
     @Published var age: String = ""
+    
+    // Step 3 Sentiments
+    @Published var movieSentiments: [Int: OnboardingSentiment] = [:]
+    
+    // Taste Profile
+    @Published var isNicheLeaning: Bool = false
     
     var isStep1Valid: Bool {
         !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !age.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
+    var isStep3Valid: Bool {
+        movieSentiments.values.contains { $0 != .unseen }
+    }
+    
+    var isStep4Valid: Bool {
+        !selectedContexts.isEmpty
+    }
+    
+    var isStep5Valid: Bool {
+        true // Optional per requirements
+    }
+    
+    var isStep6Valid: Bool {
+        true // Optional per requirements
+    }
+    
+    var isStep7Valid: Bool {
+        !selectedVibes.isEmpty
+    }
+    
+    private func updateTasteProfile() {
+        let selectedMovies = recognitionMovies.filter { selectedRecognitionIds.contains($0.id) }
+        guard !selectedMovies.isEmpty else { return }
+        
+        // Naive niche calculation: average vote count (as proxy for popularity)
+        // Lower vote count = more niche
+        let avgVoteCount = selectedMovies.reduce(0.0) { $0 + Double($1.voteCount) } / Double(selectedMovies.count)
+        
+        // Threshold: if average vote count is below 5000, consider them niche-leaning
+        // (This threshold depends on TMDB data distributions but works as a relative proxy)
+        isNicheLeaning = avgVoteCount < 5000
     }
     
     init() {
@@ -102,33 +147,35 @@ class OnboardingViewModel: ObservableObject {
             switch step {
             case .recognition:
                 if recognitionMovies.isEmpty {
-                    // Increased to 24 for more choices
-                    recognitionMovies = try await TMDBService.shared.fetchTopMovies().shuffled().prefix(24).map { $0 }
+                    await loadCalibrationSet()
                 }
             case .polarity:
-                // Reuse recognition movies or fetch new ones
                 if polarityMovies.isEmpty {
-                    polarityMovies = try await TMDBService.shared.fetchNowPlaying().shuffled().prefix(4).map { $0 }
+                    // Adapt Polarity: if niche-leaning, show more diverse/challenging titles
+                    if isNicheLeaning {
+                        // High rated but not necessarily super popular
+                        let nicheHits = try await TMDBService.shared.fetchTopRated(page: Int.random(in: 4...8))
+                        polarityMovies = nicheHits.shuffled().prefix(4).map { $0 }
+                    } else {
+                        polarityMovies = try await TMDBService.shared.fetchNowPlaying().shuffled().prefix(4).map { $0 }
+                    }
                 }
             case .actors:
                 if popularActors.isEmpty {
-                    // Increased to 18
                     popularActors = try await TMDBService.shared.fetchPopularPeople().prefix(18).map { $0 }
                 }
             case .era:
                 if eraMovies.isEmpty {
-                    // Fetch diverse eras: 90s, 2000s, 2010s, 2020s
-                    // For simplicity, just fetch one era now, or mix
                      eraMovies = try await TMDBService.shared.fetchMoviesByEra(startYear: 1990, endYear: 2010).prefix(4).map { $0 }
                 }
             case .competition:
-                 let movies = try await TMDBService.shared.fetchHighlyRatedMovies()
+                 // Adapt Competition: pick two movies that contrast user's taste
+                 let movies = try await (isNicheLeaning ? TMDBService.shared.fetchTopRated(page: 10) : TMDBService.shared.fetchHighlyRatedMovies())
                  if movies.count >= 2 {
                      competitionPair = Array(movies.prefix(2))
                  }
             case .result:
-                // In a real app, calculate based on inputs. For now, pick a random top movie
-                let recs = try await TMDBService.shared.fetchTopRated()
+                let recs = try await (isNicheLeaning ? TMDBService.shared.fetchTopRated(page: 2) : TMDBService.shared.fetchTopRated(page: 1))
                 recommendedMovie = recs.randomElement()
             default:
                 break
@@ -138,26 +185,94 @@ class OnboardingViewModel: ObservableObject {
         }
         isLoading = false
     }
+
+    @MainActor
+    private func loadCalibrationSet() async {
+        do {
+            // TIER 1: High Visibility (Increased to 20)
+            let popular = try await TMDBService.shared.fetchTopMovies(page: 1)
+            let tier1 = popular.shuffled().prefix(20)
+            
+            // TIER 2: Cultural Significance (Increased to 25)
+            // Fetch two pages for a broader pool
+            let topRated1 = try await TMDBService.shared.fetchTopRated(page: Int.random(in: 2...4))
+            let topRated2 = try await TMDBService.shared.fetchTopRated(page: Int.random(in: 5...8))
+            let tier2 = (topRated1 + topRated2).shuffled().prefix(25)
+            
+            // TIER 3: Discovery/Niche (Increased to 15)
+            let filter = FilterState()
+            var nicheFilter = filter
+            nicheFilter.minVoteAverage = 7.0
+            nicheFilter.minVoteCount = 100
+            let nicheCandidates = try await TMDBService.shared.discoverMovies(filter: nicheFilter)
+            let tier3 = nicheCandidates.shuffled().prefix(15)
+            
+            var combined = Array(tier1) + Array(tier2) + Array(tier3)
+            
+            // Shuffle to break tier clusters
+            combined.shuffle()
+            
+            self.recognitionMovies = combined
+        } catch {
+            print("Failed to load calibration set: \(error)")
+            // Fallback
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            self.recognitionMovies = (try? await TMDBService.shared.fetchTopMovies()) ?? []
+        }
+    }
     
     // Selection Logics here
     func toggleRecognition(id: Int) {
-        if selectedRecognitionIds.contains(id) { selectedRecognitionIds.remove(id) }
-        else { selectedRecognitionIds.insert(id) }
+        if selectedRecognitionIds.contains(id) { 
+            selectedRecognitionIds.remove(id) 
+        } else { 
+            selectedRecognitionIds.insert(id) 
+        }
+        updateTasteProfile()
     }
     
-    func setPolarity(id: Int, liked: Bool) {
-        if liked {
-            likedMovies.insert(id)
-            dislikedMovies.remove(id)
+    func updateSentiment(movieId: Int, sentiment: OnboardingSentiment) {
+        if movieSentiments[movieId] == sentiment {
+            movieSentiments[movieId] = .unseen
+            likedMovies.remove(movieId)
+            dislikedMovies.remove(movieId)
         } else {
-            dislikedMovies.insert(id)
-            likedMovies.remove(id)
+            movieSentiments[movieId] = sentiment
+            
+            // Sync with liked/disliked for backward compatibility
+            switch sentiment {
+            case .loved:
+                likedMovies.insert(movieId)
+                dislikedMovies.remove(movieId)
+            case .disliked:
+                dislikedMovies.insert(movieId)
+                likedMovies.remove(movieId)
+            case .okay, .unseen:
+                likedMovies.remove(movieId)
+                dislikedMovies.remove(movieId)
+            }
+        }
+    }
+    
+    func toggleContext(_ context: String) {
+        if selectedContexts.contains(context) {
+            selectedContexts.remove(context)
+        } else {
+            selectedContexts.insert(context)
         }
     }
     
     func toggleActor(id: Int) {
          if selectedActors.contains(id) { selectedActors.remove(id) }
          else { selectedActors.insert(id) }
+    }
+    
+    func toggleVibe(_ vibe: String) {
+        if selectedVibes.contains(vibe) {
+            selectedVibes.remove(vibe)
+        } else {
+            selectedVibes.insert(vibe)
+        }
     }
     
     @Published var selectedDirectorIds: Set<Int> = []
@@ -207,12 +322,13 @@ class OnboardingViewModel: ObservableObject {
             "recognitionIds": Array(selectedRecognitionIds),
             "likedMovies": Array(likedMovies),
             "dislikedMovies": Array(dislikedMovies),
-            "context": selectedContext ?? "",
-            "actors": Array(selectedActors),
+            "selectedContexts": Array(selectedContexts),
+            "selectedActors": Array(selectedActors),
             "directors": Array(selectedDirectorIds),
-            "vibe": selectedVibe ?? "",
+            "selectedVibes": Array(selectedVibes),
             "era": selectedEra ?? "",
             "subtitlePreference": subtitlePreference ?? "",
+            "movieSentiments": movieSentiments.reduce(into: [String: String]()) { $0[String($1.key)] = $1.value.rawValue },
             "competitionWinner": winnerId ?? -1,
             "recommendedMovieId": recommendedMovie?.id ?? -1,
             "timestamp": Timestamp()

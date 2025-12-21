@@ -43,52 +43,77 @@ struct MovieDetailView: View {
                                 } placeholder: {
                                     Rectangle().fill(Color.appCardBackground)
                                 }
-                                .frame(width: geometry.size.width, height: geometry.size.height * 0.5)
+                                .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
                                 .clipped()
                                 
-                                // Enhanced Cinematic Gradient
+                                // Refined Cinematic Gradient with multi-stop anchoring
                                 LinearGradient(
-                                    colors: [
-                                        .black.opacity(0.4),
-                                        .clear,
-                                        .appBackground.opacity(0.8),
-                                        .appBackground
+                                    stops: [
+                                        .init(color: .black.opacity(0.6), location: 0),
+                                        .init(color: .clear, location: 0.4),
+                                        .init(color: .appBackground.opacity(0.5), location: 0.7),
+                                        .init(color: .appBackground, location: 1.0)
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 )
-                                .frame(height: geometry.size.height * 0.5)
                                 
-                                // Floating Poster & Initial Info
-                                HStack(alignment: .bottom, spacing: 20) {
-                                    CachedAsyncImage(url: movie.posterURL) { image in
-                                        image.resizable().aspectRatio(contentMode: .fill)
-                                    } placeholder: {
-                                        Rectangle().fill(Color.appCardBackground)
-                                    }
-                                    .frame(width: 100, height: 150)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .shadow(color: .black.opacity(0.5), radius: 15, x: 0, y: 10)
+                                // Floating Content Container
+                                VStack(alignment: .leading, spacing: 20) {
+                                    Spacer()
                                     
-                                    VStack(alignment: .leading, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 12) {
                                         Text(movie.title)
-                                            .font(.system(size: 28, weight: .black, design: .rounded))
+                                            .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 48))
                                             .foregroundColor(.appText)
                                             .lineLimit(2)
-                                            .minimumScaleFactor(0.8)
+                                            .shadow(color: .black.opacity(0.5), radius: 10)
                                         
-                                        HStack(spacing: 8) {
-                                            MetadataPill(text: movie.year, icon: "calendar")
-                                            MetadataPill(text: movie.rating, icon: "star.fill", color: .appPrimary)
-                                            MetadataPill(text: movie.runtimeFormatted, icon: "clock")
+                                        HStack(spacing: 12) {
+                                            // Primary Rating Badge
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "star.fill")
+                                                    .font(.system(size: 12, weight: .bold))
+                                                Text(movie.rating)
+                                                    .font(.system(size: 14, weight: .black))
+                                            }
+                                            .padding(.vertical, 6)
+                                            .padding(.horizontal, 12)
+                                            .background(Color.appPrimary)
+                                            .foregroundColor(.black)
+                                            .cornerRadius(8)
+                                            
+                                            // Subtle Secondary Metadata
+                                            HStack(spacing: 8) {
+                                                Text(movie.year)
+                                                Text("•")
+                                                Text(movie.runtimeFormatted)
+                                                
+                                                // Availability Indicator
+                                                if let providers = viewModel.watchProviders,
+                                                   let preferredIds = appViewModel.userProfile?.streamingProviders,
+                                                   !(providers.flatrate ?? []).filter({ Set(preferredIds).contains($0.id) }).isEmpty {
+                                                    Text("•")
+                                                    Image(systemName: "play.fill")
+                                                        .font(.system(size: 10))
+                                                    Text("STREAMING")
+                                                        .foregroundColor(.appPrimary)
+                                                }
+                                            }
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(.appTextSecondary)
                                         }
+                                        
+                                        Text(movie.genreNames.uppercased())
+                                            .font(.system(size: 10, weight: .black))
+                                            .kerning(2)
+                                            .foregroundColor(.appPrimary.opacity(0.8))
                                     }
-                                    Spacer()
+                                    .padding(.horizontal, 24)
+                                    .padding(.bottom, 20)
                                 }
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 24)
                             }
-                            .frame(width: geometry.size.width, height: geometry.size.height * 0.5)
+                            .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
                             
                             // Info Section
                             VStack(alignment: .leading, spacing: 32) {
@@ -100,43 +125,36 @@ struct MovieDetailView: View {
                                     .kerning(1)
                                 
                                 // Redesigned Premium Action Bar
-                                HStack(spacing: 16) {
+                                HStack(spacing: 12) {
                                     if let trailer = movie.youtubeTrailers.first {
                                         Button(action: {
                                             if let url = trailer.youtubeURL { openURL(url) }
                                         }) {
-                                            HStack(spacing: 10) {
+                                            HStack(spacing: 8) {
                                                 Image(systemName: "play.fill")
-                                                    .font(.system(size: 14))
+                                                    .font(.system(size: 12, weight: .black))
                                                 Text("TRAILER")
                                                     .font(.system(size: 14, weight: .black))
                                             }
                                             .foregroundColor(.black)
-                                            .frame(height: 48)
+                                            .frame(height: 52)
                                             .frame(maxWidth: .infinity)
                                             .background(Color.appPrimary)
-                                            .cornerRadius(24)
-                                            .shadow(color: .appPrimary.opacity(0.3), radius: 8, y: 4)
+                                            .cornerRadius(16)
+                                            .shadow(color: .appPrimary.opacity(0.3), radius: 10, y: 5)
                                         }
                                     }
                                     
-                                    Button(action: {
+                                    ActionBarIcon(icon: watchlistManager.isInWatchlist(movie.id) ? "bookmark.fill" : "bookmark", 
+                                                 isActive: watchlistManager.isInWatchlist(movie.id)) {
                                         let movieForWatchlist = Movie(id: movie.id, title: movie.title, posterPath: movie.posterPath, backdropPath: movie.backdropPath, overview: movie.overview, releaseDate: movie.releaseDate, voteAverage: movie.voteAverage, voteCount: movie.voteCount)
                                         let isAdding = !watchlistManager.isInWatchlist(movie.id)
                                         withAnimation { watchlistManager.toggleWatchlist(movieForWatchlist) }
                                         showToast(message: isAdding ? "Added to Watchlist" : "Removed from Watchlist")
-                                    }) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(watchlistManager.isInWatchlist(movie.id) ? Color.appPrimary : Color.white.opacity(0.05))
-                                                .frame(width: 48, height: 48)
-                                            Image(systemName: watchlistManager.isInWatchlist(movie.id) ? "bookmark.fill" : "bookmark")
-                                                .font(.system(size: 18, weight: .bold))
-                                                .foregroundColor(watchlistManager.isInWatchlist(movie.id) ? .black : .appText)
-                                        }
                                     }
                                     
-                                    Button(action: {
+                                    ActionBarIcon(icon: historyManager.isWatched(movieId: movie.id) ? "eye.fill" : "eye", 
+                                                 isActive: historyManager.isWatched(movieId: movie.id)) {
                                         if historyManager.isWatched(movieId: movie.id) {
                                             historyManager.removeFromHistory(movieId: movie.id)
                                             showToast(message: "Removed from History")
@@ -144,69 +162,37 @@ struct MovieDetailView: View {
                                             historyManager.addToHistory(movie: movie)
                                             showToast(message: "Marked as Watched")
                                         }
-                                    }) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(historyManager.isWatched(movieId: movie.id) ? Color.appPrimary : Color.white.opacity(0.05))
-                                                .frame(width: 48, height: 48)
-                                            Image(systemName: historyManager.isWatched(movieId: movie.id) ? "eye.fill" : "eye")
-                                                .font(.system(size: 18, weight: .bold))
-                                                .foregroundColor(historyManager.isWatched(movieId: movie.id) ? .black : .appText)
-                                        }
                                     }
                                     
-                                    // Share Button
-                                    if let movie = viewModel.movieDetail {
-                                        Button(action: { showRecommendSheet = true }) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(Color.white.opacity(0.05))
-                                                    .frame(width: 48, height: 48)
-                                                Image(systemName: "paperplane")
-                                                    .font(.system(size: 18, weight: .bold))
-                                                    .foregroundColor(.appText)
-                                            }
-                                        }
-                                        
-                                        ShareLink(item: URL(string: "https://www.themoviedb.org/movie/\(movie.id)")!, 
-                                                  subject: Text("Check out this movie!"),
-                                                  message: Text("I found this amazing movie on WatchToHeal: \(movie.title)")) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(Color.white.opacity(0.05))
-                                                    .frame(width: 48, height: 48)
-                                                Image(systemName: "square.and.arrow.up")
-                                                    .font(.system(size: 18, weight: .bold))
-                                                    .foregroundColor(.appText)
-                                            }
-                                        }
+                                    ActionBarIcon(icon: "paperplane", isActive: false) {
+                                        showRecommendSheet = true
                                     }
                                 }
                                 
-                                // Cinephile Community Section
-                                MovieCommunitySection(movieId: movie.id, movieTitle: movie.title, moviePoster: movie.posterPath)
-                                
-                                // Where to Watch
+                                // Where to Watch - Anchored earlier
                                 if let providers = viewModel.watchProviders {
                                     VStack(alignment: .leading, spacing: 16) {
                                         HStack {
-                                            Image(systemName: "tv.fill")
-                                                .foregroundColor(.appPrimary)
                                             Text("WHERE TO WATCH")
-                                                .font(.system(size: 14, weight: .black))
-                                                .kerning(1)
+                                                .font(.system(size: 10, weight: .black))
+                                                .kerning(2)
+                                                .foregroundColor(.appPrimary)
+                                            Spacer()
+                                            Rectangle().fill(Color.appPrimary.opacity(0.2)).frame(height: 1)
                                         }
                                         
-                                        WatchProvidersView(providers: providers)
-                                            .padding(20)
-                                            .background(Color.white.opacity(0.03))
-                                            .cornerRadius(20)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                                            )
+                                        WatchProvidersView(
+                                            providers: providers,
+                                            preferredProviderIds: Set(appViewModel.userProfile?.streamingProviders ?? [])
+                                        )
+                                        .padding(16)
+                                        .background(Color.white.opacity(0.04))
+                                        .cornerRadius(16)
                                     }
                                 }
+                                
+                                // Cinephile Community Section - Teased earlier
+                                MovieCommunitySection(movieId: movie.id, movieTitle: movie.title, moviePoster: movie.posterPath)
                                 
                                 // Overview
                                 VStack(alignment: .leading, spacing: 12) {
@@ -364,16 +350,36 @@ struct MetadataPill: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .black))
+                .font(.system(size: 8, weight: .black))
             Text(text)
-                .font(.system(size: 11, weight: .black))
+                .font(.system(size: 9, weight: .black))
                 .lineLimit(1)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
-        .background(color == .appPrimary ? color : Color.white.opacity(0.05))
-        .foregroundColor(color == .appPrimary ? .black : .white)
-        .cornerRadius(8)
-        .fixedSize(horizontal: true, vertical: false)
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(color == .appPrimary ? color : Color.white.opacity(0.04))
+        .foregroundColor(color == .appPrimary ? .black : .white.opacity(0.6))
+        .cornerRadius(6)
+    }
+}
+
+struct ActionBarIcon: View {
+    let icon: String
+    let isActive: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isActive ? Color.appPrimary : Color.white.opacity(0.04))
+                    .frame(width: 52, height: 52)
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(isActive ? Color.appPrimary : Color.white.opacity(0.06), lineWidth: 1))
+                
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(isActive ? .black : .appText)
+            }
+        }
     }
 }

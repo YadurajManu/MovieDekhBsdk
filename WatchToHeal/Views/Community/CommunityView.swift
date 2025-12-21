@@ -124,7 +124,7 @@ struct CommunityView: View {
                 TextField("Search by username...", text: $viewModel.searchQuery)
                     .foregroundColor(.appText)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .onChange(of: viewModel.searchQuery) { _ in
+                    .onChange(of: viewModel.searchQuery) { _, _ in
                         viewModel.performSearch()
                     }
                 
