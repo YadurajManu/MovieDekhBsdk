@@ -17,6 +17,9 @@ struct MovieDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.openURL) var openURL
     @State private var selectedSimilarMovie: Movie?
+    @State private var toastMessage: String?
+    @State private var showToast = false
+    @State private var showRecommendSheet = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -102,30 +105,33 @@ struct MovieDetailView: View {
                                         Button(action: {
                                             if let url = trailer.youtubeURL { openURL(url) }
                                         }) {
-                                            HStack(spacing: 12) {
+                                            HStack(spacing: 10) {
                                                 Image(systemName: "play.fill")
+                                                    .font(.system(size: 14))
                                                 Text("TRAILER")
+                                                    .font(.system(size: 14, weight: .black))
                                             }
-                                            .font(.system(size: 16, weight: .black))
                                             .foregroundColor(.black)
-                                            .frame(height: 56)
+                                            .frame(height: 48)
                                             .frame(maxWidth: .infinity)
                                             .background(Color.appPrimary)
-                                            .cornerRadius(28)
-                                            .shadow(color: .appPrimary.opacity(0.3), radius: 10, y: 5)
+                                            .cornerRadius(24)
+                                            .shadow(color: .appPrimary.opacity(0.3), radius: 8, y: 4)
                                         }
                                     }
                                     
                                     Button(action: {
                                         let movieForWatchlist = Movie(id: movie.id, title: movie.title, posterPath: movie.posterPath, backdropPath: movie.backdropPath, overview: movie.overview, releaseDate: movie.releaseDate, voteAverage: movie.voteAverage, voteCount: movie.voteCount)
+                                        let isAdding = !watchlistManager.isInWatchlist(movie.id)
                                         withAnimation { watchlistManager.toggleWatchlist(movieForWatchlist) }
+                                        showToast(message: isAdding ? "Added to Watchlist" : "Removed from Watchlist")
                                     }) {
                                         ZStack {
                                             Circle()
                                                 .fill(watchlistManager.isInWatchlist(movie.id) ? Color.appPrimary : Color.white.opacity(0.05))
-                                                .frame(width: 56, height: 56)
+                                                .frame(width: 48, height: 48)
                                             Image(systemName: watchlistManager.isInWatchlist(movie.id) ? "bookmark.fill" : "bookmark")
-                                                .font(.system(size: 20, weight: .bold))
+                                                .font(.system(size: 18, weight: .bold))
                                                 .foregroundColor(watchlistManager.isInWatchlist(movie.id) ? .black : .appText)
                                         }
                                     }
@@ -133,31 +139,44 @@ struct MovieDetailView: View {
                                     Button(action: {
                                         if historyManager.isWatched(movieId: movie.id) {
                                             historyManager.removeFromHistory(movieId: movie.id)
+                                            showToast(message: "Removed from History")
                                         } else {
                                             historyManager.addToHistory(movie: movie)
+                                            showToast(message: "Marked as Watched")
                                         }
                                     }) {
                                         ZStack {
                                             Circle()
                                                 .fill(historyManager.isWatched(movieId: movie.id) ? Color.appPrimary : Color.white.opacity(0.05))
-                                                .frame(width: 56, height: 56)
+                                                .frame(width: 48, height: 48)
                                             Image(systemName: historyManager.isWatched(movieId: movie.id) ? "eye.fill" : "eye")
-                                                .font(.system(size: 20, weight: .bold))
+                                                .font(.system(size: 18, weight: .bold))
                                                 .foregroundColor(historyManager.isWatched(movieId: movie.id) ? .black : .appText)
                                         }
                                     }
                                     
                                     // Share Button
                                     if let movie = viewModel.movieDetail {
+                                        Button(action: { showRecommendSheet = true }) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.white.opacity(0.05))
+                                                    .frame(width: 48, height: 48)
+                                                Image(systemName: "paperplane")
+                                                    .font(.system(size: 18, weight: .bold))
+                                                    .foregroundColor(.appText)
+                                            }
+                                        }
+                                        
                                         ShareLink(item: URL(string: "https://www.themoviedb.org/movie/\(movie.id)")!, 
                                                   subject: Text("Check out this movie!"),
                                                   message: Text("I found this amazing movie on WatchToHeal: \(movie.title)")) {
                                             ZStack {
                                                 Circle()
                                                     .fill(Color.white.opacity(0.05))
-                                                    .frame(width: 56, height: 56)
+                                                    .frame(width: 48, height: 48)
                                                 Image(systemName: "square.and.arrow.up")
-                                                    .font(.system(size: 20, weight: .bold))
+                                                    .font(.system(size: 18, weight: .bold))
                                                     .foregroundColor(.appText)
                                             }
                                         }
@@ -283,14 +302,56 @@ struct MovieDetailView: View {
                 }
                 .padding(.top, geometry.safeAreaInsets.top + 8)
                 .padding(.leading, 16)
+                
+                // Elegant Toast Overlay
+                if showToast, let message = toastMessage {
+                    VStack {
+                        Spacer()
+                        Text(message)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(.black)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .background(Color.appPrimary)
+                            .cornerRadius(25)
+                            .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                    .padding(.bottom, 100)
+                    .frame(maxWidth: .infinity)
+                    .zIndex(100)
+                }
             }
         }
         .navigationBarHidden(true)
         .fullScreenCover(item: $selectedSimilarMovie) { movie in
             MovieDetailView(movieId: movie.id)
         }
+        .sheet(isPresented: $showRecommendSheet) {
+            if let movie = viewModel.movieDetail {
+                RecommendMovieSheet(
+                    movieId: movie.id,
+                    movieTitle: movie.title,
+                    moviePoster: movie.posterPath
+                )
+            }
+        }
         .task {
             await viewModel.loadMovieDetail(id: movieId, region: appViewModel.userProfile?.preferredRegion ?? "US")
+        }
+    }
+    
+    private func showToast(message: String) {
+        toastMessage = message
+        withAnimation(.spring()) {
+            showToast = true
+        }
+        
+        // Auto-dismiss
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                showToast = false
+            }
         }
     }
 }

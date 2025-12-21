@@ -938,9 +938,49 @@ class FirestoreService {
             return nil
         }
     }
+    // MARK: - Movie Nudges (Direct Recommendations)
+    
+    func sendRecommendation(sender: UserProfile, recipientId: String, movieId: Int, movieTitle: String, moviePoster: String?, note: String) async throws {
+        let recommendation = MovieRecommendation(
+            senderId: sender.id,
+            senderName: sender.username ?? sender.name,
+            senderPhoto: sender.photoURL?.absoluteString,
+            recipientId: recipientId,
+            movieId: movieId,
+            movieTitle: movieTitle,
+            moviePoster: moviePoster,
+            note: note,
+            timestamp: Date(),
+            reaction: nil,
+            isRead: false
+        )
+        
+        try db.collection("recommendations").addDocument(from: recommendation)
+    }
+    
+    func fetchRecommendations(userId: String) async throws -> [MovieRecommendation] {
+        let snapshot = try await db.collection("recommendations")
+            .whereField("recipientId", isEqualTo: userId)
+            .getDocuments()
+        
+        let recs = snapshot.documents.compactMap { try? $0.data(as: MovieRecommendation.self) }
+        return recs.sorted(by: { $0.timestamp > $1.timestamp })
+    }
+    
+    func updateRecommendationReaction(recommendationId: String, reaction: String) async throws {
+        try await db.collection("recommendations").document(recommendationId).updateData([
+            "reaction": reaction,
+            "isRead": true
+        ])
+    }
+    
+    func markRecommendationAsRead(recommendationId: String) async throws {
+        try await db.collection("recommendations").document(recommendationId).updateData([
+            "isRead": true
+        ])
+    }
 }
 
-// Helper Model for History
 struct WatchedMovie: Identifiable, Codable {
     let id: Int
     let title: String

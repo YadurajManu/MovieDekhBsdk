@@ -45,7 +45,7 @@ struct CreateCommunityListView: View {
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.appPrimary)
                                 
-                                TextField("e.g. Cinematic Masterpieces", text: $viewModel.title)
+                                TextField("e.g. Cinema Masterpieces", text: $viewModel.title)
                                     .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 32))
                                     .foregroundColor(.appText)
                                     .textFieldStyle(PlainTextFieldStyle())

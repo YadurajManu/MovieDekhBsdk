@@ -62,20 +62,24 @@ struct ProfileView: View {
         cacheSize = ImageLoader.getCacheSize()
     }
     
+    // Extracted view elements for better compiler performance
+    private var meshGradientBackground: some View {
+        MeshGradient(width: 3, height: 3, points: [
+            [0, 0], [0.5, 0], [1, 0],
+            [0, 0.5], [0.5, 0.5], [1, 0.5],
+            [0, 1], [0.5, 1], [1, 1]
+        ], colors: [
+            .black, .black, .black,
+            Color(hex: "1A1A1A"), .black, Color(hex: "0D0D0D"),
+            Color.appPrimary.opacity(0.15), .black, .black
+        ])
+        .ignoresSafeArea()
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background: Mesh Gradient for premium feel
-                MeshGradient(width: 3, height: 3, points: [
-                    [0, 0], [0.5, 0], [1, 0],
-                    [0, 0.5], [0.5, 0.5], [1, 0.5],
-                    [0, 1], [0.5, 1], [1, 1]
-                ], colors: [
-                    .black, .black, .black,
-                    Color(hex: "1A1A1A"), .black, Color(hex: "0D0D0D"),
-                    Color.appPrimary.opacity(0.15), .black, .black
-                ])
-                .ignoresSafeArea()
+                meshGradientBackground
                 
                 ScrollView {
                     VStack(spacing: 32) {
@@ -256,9 +260,13 @@ struct ProfileView: View {
                                 NavigationLink(destination: FriendsListView()) {
                                     menuItem(icon: "person.2.fill", title: "My Friends")
                                 }
-                                Divider().background(Color.white.opacity(0.1))
+                                 Divider().background(Color.white.opacity(0.1))
                                 NavigationLink(destination: MyCommunityListsView()) {
-                                    menuItem(icon: "film.stack", title: "My Lists")
+                                    menuItem(icon: "list.bullet.indent", title: "My Movie Lists")
+                                }
+                                Divider().background(Color.white.opacity(0.1))
+                                NavigationLink(destination: MovieInboxView()) {
+                                    menuItem(icon: "paperplane.fill", title: "Movie Nudges")
                                 }
                                 Divider().background(Color.white.opacity(0.1))
                                 NavigationLink(destination: FriendRequestsView()) {
