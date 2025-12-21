@@ -6,6 +6,8 @@ class CommunityListsViewModel: ObservableObject {
     @Published var title: String = ""
     @Published var description: String = ""
     @Published var selectedMovies: [Movie] = []
+    @Published var isRanked: Bool = false
+    @Published var tags: [String] = []
     @Published var isSaving: Bool = false
     @Published var errorMessage: String?
     
@@ -31,6 +33,9 @@ class CommunityListsViewModel: ObservableObject {
             title: title,
             description: description,
             movies: selectedMovies,
+            isRanked: isRanked,
+            isFeatured: false,
+            tags: tags,
             likeCount: 0,
             commentCount: 0,
             likedBy: [],

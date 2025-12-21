@@ -8,19 +8,25 @@ struct CommunityList: Identifiable, Codable, Hashable {
     var title: String
     var description: String
     var movies: [Movie]
+    var isRanked: Bool
+    var isFeatured: Bool
+    var tags: [String]
     var likeCount: Int
     var commentCount: Int
     var likedBy: [String]
     let createdAt: Date
     var updatedAt: Date
     
-    init(id: String, ownerId: String, ownerName: String, title: String, description: String, movies: [Movie], likeCount: Int, commentCount: Int, likedBy: [String], createdAt: Date, updatedAt: Date) {
+    init(id: String, ownerId: String, ownerName: String, title: String, description: String, movies: [Movie], isRanked: Bool, isFeatured: Bool, tags: [String], likeCount: Int, commentCount: Int, likedBy: [String], createdAt: Date, updatedAt: Date) {
         self.id = id
         self.ownerId = ownerId
         self.ownerName = ownerName
         self.title = title
         self.description = description
         self.movies = movies
+        self.isRanked = isRanked
+        self.isFeatured = isFeatured
+        self.tags = tags
         self.likeCount = likeCount
         self.commentCount = commentCount
         self.likedBy = likedBy
@@ -44,6 +50,9 @@ struct CommunityList: Identifiable, Codable, Hashable {
         self.title = title
         self.description = description
         self.movies = movieData.compactMap { Movie(dictionary: $0) }
+        self.isRanked = dictionary["isRanked"] as? Bool ?? false
+        self.isFeatured = dictionary["isFeatured"] as? Bool ?? false
+        self.tags = dictionary["tags"] as? [String] ?? []
         self.likeCount = dictionary["likeCount"] as? Int ?? 0
         self.commentCount = dictionary["commentCount"] as? Int ?? 0
         self.likedBy = dictionary["likedBy"] as? [String] ?? []
@@ -59,6 +68,9 @@ struct CommunityList: Identifiable, Codable, Hashable {
             "title": title,
             "description": description,
             "movies": movies.map { $0.dictionary },
+            "isRanked": isRanked,
+            "isFeatured": isFeatured,
+            "tags": tags,
             "likeCount": likeCount,
             "commentCount": commentCount,
             "likedBy": likedBy,

@@ -53,7 +53,7 @@ struct CreateCommunityListView: View {
                                 Divider().background(Color.white.opacity(0.1))
                             }
                             
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 Text("DESCRIPTION")
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.appPrimary)
@@ -65,6 +65,55 @@ struct CreateCommunityListView: View {
                                     .background(Color.white.opacity(0.03))
                                     .cornerRadius(12)
                                     .foregroundColor(.appText)
+                            }
+                            
+                            // Ranked Toggle
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("RANKED LIST")
+                                        .font(.system(size: 12, weight: .black))
+                                        .foregroundColor(.white)
+                                    Text("Large numbers will appear next to movies")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.appTextSecondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $viewModel.isRanked)
+                                    .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
+                                    .labelsHidden()
+                            }
+                            .padding(16)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.03)))
+                            
+                            // Tags Input (Simulation for now)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("TAGS")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.appPrimary)
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack {
+                                        ForEach(["#MustWatch", "#Classic", "#BingeMode", "#Masterpiece"], id: \.self) { tag in
+                                            Button(action: {
+                                                if viewModel.tags.contains(tag) {
+                                                    viewModel.tags.removeAll { $0 == tag }
+                                                } else {
+                                                    viewModel.tags.append(tag)
+                                                }
+                                            }) {
+                                                Text(tag)
+                                                    .font(.system(size: 12, weight: .bold))
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 6)
+                                                    .background(viewModel.tags.contains(tag) ? Color.appPrimary : Color.white.opacity(0.05))
+                                                    .foregroundColor(viewModel.tags.contains(tag) ? .black : .white.opacity(0.6))
+                                                    .cornerRadius(8)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         .padding(.horizontal, 24)

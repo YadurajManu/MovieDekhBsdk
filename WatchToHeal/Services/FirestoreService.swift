@@ -466,7 +466,7 @@ class FirestoreService {
         let listRef = db.collection("communityLists").document(listId)
         let commentRef = listRef.collection("comments").document(comment.id)
         
-        try await db.runTransaction { (transaction, _) -> Any? in
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
             transaction.setData(comment.dictionary, forDocument: commentRef)
             transaction.updateData(["commentCount": FieldValue.increment(Int64(1))], forDocument: listRef)
             return nil
@@ -530,7 +530,7 @@ class FirestoreService {
         let socialRef = db.collection("movieSocial").document("\(movieId)")
         let reviewRef = socialRef.collection("reviews").document(user.id)
         
-        try await db.runTransaction { (transaction, _) -> Any? in
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
             // 1. Get current stats
             let socialDoc: DocumentSnapshot
             do {
@@ -617,7 +617,7 @@ class FirestoreService {
             
         var isLiking = false
         
-        try await db.runTransaction { (transaction, _) -> Any? in
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
             let reviewDoc: DocumentSnapshot
             do {
                 reviewDoc = try transaction.getDocument(reviewRef)
@@ -665,7 +665,7 @@ class FirestoreService {
             .document(reviewId)
         let replyRef = reviewRef.collection("replies").document()
         
-        try await db.runTransaction { (transaction, _) -> Any? in
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
             // 1. Update review's reply count
             let reviewDoc: DocumentSnapshot
             do {
@@ -888,7 +888,7 @@ class FirestoreService {
     private func updateUserStats(userId: String, activityType: ActivityType, rating: String? = nil) async throws {
         let statsRef = db.collection("users").document(userId).collection("stats").document("main")
         
-        try await db.runTransaction { (transaction, _) -> Any? in
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
             let statsDoc: DocumentSnapshot
             do {
                 statsDoc = try transaction.getDocument(statsRef)
@@ -1002,7 +1002,7 @@ class FirestoreService {
     func submitPollVote(pollId: String, optionIndex: Int, userId: String) async throws {
         let pollRef = db.collection("polls").document(pollId)
         
-        try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
             let pollDocument: DocumentSnapshot
             do {
                 pollDocument = try transaction.getDocument(pollRef)
@@ -1011,7 +1011,7 @@ class FirestoreService {
                 return nil
             }
             
-            guard var poll = try? pollDocument.data(as: MoviePoll.self) else {
+            guard let poll = try? pollDocument.data(as: MoviePoll.self) else {
                 let error = NSError(domain: "FirestoreService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Poll not found"])
                 errorPointer?.pointee = error
                 return nil
@@ -1045,6 +1045,71 @@ class FirestoreService {
     
     func updateUserRole(userId: String, isAdmin: Bool) async throws {
         try await db.collection("users").document(userId).updateData(["isAdmin": isAdmin])
+    }
+    
+    // MARK: - Staff Picks
+    func toggleFeaturedList(listId: String, isFeatured: Bool) async throws {
+        try await db.collection("communityLists").document(listId).updateData([
+            "isFeatured": isFeatured,
+            "updatedAt": Timestamp()
+        ])
+    }
+    
+    func fetchFeaturedLists() async throws -> [CommunityList] {
+        let snapshot = try await db.collection("communityLists")
+            .whereField("isFeatured", isEqualTo: true)
+            .limit(to: 20)
+            .getDocuments()
+        
+        let lists = parseCommunityLists(from: snapshot)
+        return lists.sorted { $0.updatedAt > $1.updatedAt }
+    }
+    
+    // MARK: - Staff Pick Movies
+    func addStaffPickMovie(movie: Movie) async throws {
+        let staffPick = StaffPickMovie(movie: movie)
+        try db.collection("staffPickMovies").document("\(movie.id)").setData(from: staffPick)
+    }
+    
+    func removeStaffPickMovie(movieId: Int) async throws {
+        try await db.collection("staffPickMovies").document("\(movieId)").delete()
+    }
+    
+    func fetchStaffPickMovies() async throws -> [Movie] {
+        let snapshot = try await db.collection("staffPickMovies")
+            .order(by: "addedAt", descending: true)
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { doc -> Movie? in
+            guard let pick = try? doc.data(as: StaffPickMovie.self) else { return nil }
+            return pick.movie
+        }
+    }
+    
+    func banUser(userId: String, isBanned: Bool) async throws {
+        try await db.collection("users").document(userId).updateData(["isBanned": isBanned])
+    }
+    
+    // MARK: - Platform Analytics
+    func fetchPlatformAnalytics() async throws -> [String: Any] {
+        // In a production app, these would be cached or use Firestore Aggregations
+        // For now, we'll do simple counting for the dashboard
+        let usersCount = try await db.collection("users").count.getAggregation(source: .server).count
+        let listsCount = try await db.collection("communityLists").count.getAggregation(source: .server).count
+        let pollsCount = try await db.collection("polls").count.getAggregation(source: .server).count
+        
+        // New users this week
+        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        let newUsersSnapshot = try await db.collection("users")
+            .whereField("lastLogin", isGreaterThanOrEqualTo: Timestamp(date: weekAgo))
+            .getDocuments()
+            
+        return [
+            "totalUsers": Int(truncating: usersCount as NSNumber),
+            "totalLists": Int(truncating: listsCount as NSNumber),
+            "totalPolls": Int(truncating: pollsCount as NSNumber),
+            "newUsersWeek": newUsersSnapshot.documents.count
+        ]
     }
 }
 

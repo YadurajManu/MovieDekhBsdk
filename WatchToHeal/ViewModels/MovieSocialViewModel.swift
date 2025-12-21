@@ -85,6 +85,7 @@ class MovieSocialViewModel: ObservableObject {
     }
     
     func toggleLike(reviewId: String, userId: String) async {
+        print("🔄 MovieSocialViewModel.toggleLike called - reviewId: \(reviewId), userId: \(userId)")
         do {
             try await firestoreService.toggleReviewLike(
                 movieId: movieId,
@@ -93,14 +94,16 @@ class MovieSocialViewModel: ObservableObject {
                 reviewId: reviewId,
                 userId: userId
             )
+            print("✅ Like toggled successfully")
             // Optimistic update or refresh
             await loadSocialData()
         } catch {
-            print("Error toggling like: \(error)")
+            print("❌ Error toggling like: \(error)")
         }
     }
     
     func postReply(reviewId: String, content: String, user: UserProfile) async {
+        print("🔄 MovieSocialViewModel.postReply called - reviewId: \(reviewId), content: \(content)")
         do {
             try await firestoreService.submitMovieReply(
                 movieId: movieId,
@@ -110,18 +113,22 @@ class MovieSocialViewModel: ObservableObject {
                 content: content,
                 user: user
             )
+            print("✅ Reply posted successfully")
             // Refresh data to show new reply count and potentially fetch replies
             await loadSocialData()
         } catch {
-            print("Error posting reply: \(error)")
+            print("❌ Error posting reply: \(error)")
         }
     }
     
     func fetchReplies(reviewId: String) async -> [MovieReply] {
+        print("🔄 MovieSocialViewModel.fetchReplies called - reviewId: \(reviewId)")
         do {
-            return try await firestoreService.fetchMovieReplies(movieId: movieId, reviewId: reviewId)
+            let replies = try await firestoreService.fetchMovieReplies(movieId: movieId, reviewId: reviewId)
+            print("✅ Fetched \(replies.count) replies")
+            return replies
         } catch {
-            print("Error fetching replies: \(error)")
+            print("❌ Error fetching replies: \(error)")
             return []
         }
     }

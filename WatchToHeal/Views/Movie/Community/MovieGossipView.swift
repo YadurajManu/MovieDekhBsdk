@@ -176,7 +176,11 @@ struct ReviewRow: View {
             HStack(spacing: 20) {
                 // Like Button
                 Button(action: {
-                    guard let userId = appViewModel.userProfile?.id, let reviewId = review.id else { return }
+                    guard let userId = appViewModel.userProfile?.id, let reviewId = review.id else { 
+                        print("⚠️ Cannot like: userId=\(appViewModel.userProfile?.id ?? "nil"), reviewId=\(review.id ?? "nil")")
+                        return 
+                    }
+                    print("❤️ Toggling like for review: \(reviewId)")
                     Task { await viewModel.toggleLike(reviewId: reviewId, userId: userId) }
                 }) {
                     HStack(spacing: 4) {
@@ -186,10 +190,14 @@ struct ReviewRow: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.appTextSecondary)
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                 }
+                .buttonStyle(.plain)
                 
                 // Reply Button
                 Button(action: {
+                    print("💬 Toggling replies for review: \(review.id ?? "unknown")")
                     withAnimation {
                         if !showReplies {
                             loadReplies()
@@ -203,7 +211,10 @@ struct ReviewRow: View {
                             .font(.system(size: 12, weight: .bold))
                     }
                     .foregroundColor(.appTextSecondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                 }
+                .buttonStyle(.plain)
                 
                 Spacer()
             }
@@ -262,12 +273,23 @@ struct ReviewRow: View {
     }
     
     private func postReply() {
-        guard let reviewId = review.id, let user = appViewModel.userProfile else { return }
+        guard let reviewId = review.id, let user = appViewModel.userProfile else { 
+            print("⚠️ Cannot post reply: reviewId=\(review.id ?? "nil"), user=\(appViewModel.userProfile?.name ?? "nil")")
+            return 
+        }
+        guard !newReplyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            print("⚠️ Cannot post empty reply")
+            return
+        }
+        
+        print("📝 Posting reply to review: \(reviewId)")
         isReplying = true
         Task {
             await viewModel.postReply(reviewId: reviewId, content: newReplyText, user: user)
-            newReplyText = ""
-            isReplying = false
+            await MainActor.run {
+                newReplyText = ""
+                isReplying = false
+            }
             loadReplies()
         }
     }

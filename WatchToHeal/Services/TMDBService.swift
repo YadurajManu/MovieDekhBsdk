@@ -23,8 +23,8 @@ class TMDBService {
     
     private init() {}
     
-    func fetchTrending() async throws -> [Movie] {
-        let urlString = "\(baseURL)/trending/movie/day?api_key=\(apiKey)"
+    func fetchTrending(timeWindow: String = "day") async throws -> [Movie] {
+        let urlString = "\(baseURL)/trending/movie/\(timeWindow)?api_key=\(apiKey)"
         guard let url = URL(string: urlString) else { throw URLError(.badURL) }
         let (data, _) = try await urlSession.data(from: url)
         let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
@@ -179,7 +179,7 @@ class TMDBService {
             queryItems.append(URLQueryItem(name: "with_runtime.gte", value: String(Int(filter.runtimeRange.lowerBound))))
         }
         if filter.runtimeRange.upperBound < 240 { // Assuming 240 is max slider value
-             queryItems.append(URLQueryItem(name: "with_runtime.lte", value: String(Int(filter.runtimeRange.upperBound))))
+            queryItems.append(URLQueryItem(name: "with_runtime.lte", value: String(Int(filter.runtimeRange.upperBound))))
         }
         
         // Monetization (with_watch_monetization_types)
@@ -196,7 +196,7 @@ class TMDBService {
         let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
         return response.results
     }
-
+    
     // MARK: - Advanced Onboarding Support (Taste Fingerprinting)
     
     func fetchPopularPeople() async throws -> [Person] {
@@ -276,7 +276,7 @@ class TMDBService {
     func fetchWarMovies(page: Int = 1) async throws -> [Movie] {
         try await fetchMoviesByGenre(genreId: 10752, page: page)
     }
-
+    
     // MARK: - Director/Person Methods
     
     struct PersonDetail: Codable {
@@ -459,5 +459,50 @@ class TMDBService {
         let (data, _) = try await urlSession.data(from: url)
         let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
         return response.results
+    }
+    
+    // MARK: - Trailers
+    
+    struct MovieTrailer: Identifiable, Codable {
+        let id: Int
+        let movieTitle: String
+        let backdropPath: String?
+        let youtubeKey: String
+        
+        var backdropURL: URL? {
+            guard let path = backdropPath else { return nil }
+            return URL(string: "https://image.tmdb.org/t/p/w780\(path)")
+        }
+        
+        var youtubeURL: URL? {
+            URL(string: "https://www.youtube.com/watch?v=\(youtubeKey)")
+        }
+    }
+    
+    func fetchLatestTrailers() async throws -> [MovieTrailer] {
+        // 1. Fetch upcoming movies
+        let upcoming = try await fetchUpcoming()
+        let moviesToFetch = Array(upcoming.prefix(6)) // Limit to 6 for performance
+        
+        var trailers: [MovieTrailer] = []
+        
+        // 2. Fetch videos for each movie
+        for movie in moviesToFetch {
+            do {
+                let detail = try await fetchMovieDetail(id: movie.id)
+                if let trailer = detail.youtubeTrailers.first {
+                    trailers.append(MovieTrailer(
+                        id: movie.id,
+                        movieTitle: movie.title,
+                        backdropPath: movie.backdropPath ?? movie.posterPath,
+                        youtubeKey: trailer.key
+                    ))
+                }
+            } catch {
+                print("Error fetching trailer for \(movie.title): \(error)")
+            }
+        }
+        
+        return trailers
     }
 }

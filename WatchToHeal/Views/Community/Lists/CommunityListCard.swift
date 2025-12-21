@@ -16,16 +16,52 @@ struct CommunityListCard: View {
             .frame(width: 50, height: 75)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(list.title)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.appText)
-                    .lineLimit(1)
+                HStack {
+                    Text(list.title)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.appText)
+                        .lineLimit(1)
+                    
+                    if list.isRanked {
+                        Text("RANKED")
+                            .font(.system(size: 8, weight: .black))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.appPrimary.opacity(0.1))
+                            .foregroundColor(.appPrimary)
+                            .cornerRadius(4)
+                    }
+                    
+                    if list.isFeatured {
+                        HStack(spacing: 3) {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 7))
+                            Text("STAFF PICK")
+                        }
+                        .font(.system(size: 8, weight: .black))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .cornerRadius(4)
+                    }
+                }
                 
                 Text(list.ownerName)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.appPrimary)
                 
-                HStack(spacing: 10) {
+                if !list.tags.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(list.tags.prefix(2), id: \.self) { tag in
+                            Text(tag)
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.appTextSecondary.opacity(0.6))
+                        }
+                    }
+                }
+                
+                HStack(spacing: 12) {
                     HStack(spacing: 3) {
                         Image(systemName: "film")
                         Text("\(list.movies.count)")

@@ -9,6 +9,7 @@ struct UserProfile: Codable, Identifiable, Hashable {
     var photoURL: URL?
     var topFavorites: [Movie]
     var isAdmin: Bool = false
+    var isBanned: Bool = false
     
     // Social Stats
     var followerCount: Int = 0

@@ -11,6 +11,9 @@ struct SearchView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = SearchViewModel()
     @State private var selectedMovie: Movie?
+    @State private var selectedTrailer: TMDBService.MovieTrailer?
+    @State private var discoveryTab = 0 // 0: Staff Picks, 1: Collections
+    @Namespace private var discoveryNamespace
     
     var body: some View {
         ZStack {
@@ -130,6 +133,66 @@ struct SearchView: View {
                         // Recents & Trending Section
                         ScrollView(showsIndicators: false) {
                             VStack(alignment: .leading, spacing: 32) {
+                                if !viewModel.latestTrailers.isEmpty {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        Text("LATEST TRAILERS")
+                                            .font(.system(size: 14, weight: .black))
+                                            .foregroundColor(.appTextSecondary)
+                                            .kerning(1)
+                                            .padding(.horizontal, 20)
+                                        
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 20) {
+                                                ForEach(viewModel.latestTrailers) { trailer in
+                                                    Button(action: { 
+                                                        viewModel.searchQuery = "" // Clear keyboard/focus
+                                                        selectedTrailer = trailer 
+                                                    }) {
+                                                        TrailerCard(trailer: trailer)
+                                                    }
+                                                    .buttonStyle(PlainButtonStyle())
+                                                }
+                                            }
+                                            .padding(.horizontal, 20)
+                                        }
+                                    }
+                                }
+                                
+                                // Discovery Switcher
+                                discoverySwitcher
+                                
+                                if discoveryTab == 0 {
+                                    // Staff Picks (Movies)
+                                    if !viewModel.staffPicks.isEmpty {
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 16) {
+                                                ForEach(viewModel.staffPicks) { movie in
+                                                    Button(action: { selectedMovie = movie }) {
+                                                        MovieCardView(movie: movie, width: 140)
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 20)
+                                        }
+                                        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                                    }
+                                } else {
+                                    // Featured Collections (Lists)
+                                    if !viewModel.featuredLists.isEmpty {
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 20) {
+                                                ForEach(viewModel.featuredLists) { list in
+                                                    NavigationLink(destination: ListDetailView(list: list)) {
+                                                        StaffPickCard(list: list)
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 20)
+                                        }
+                                        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                                    }
+                                }
+                                
                                 if !viewModel.recentSearches.isEmpty {
                                     VStack(alignment: .leading, spacing: 16) {
                                         HStack {
@@ -167,11 +230,50 @@ struct SearchView: View {
                                 
                                 if !viewModel.trendingMovies.isEmpty {
                                     VStack(alignment: .leading, spacing: 16) {
-                                        Text("TRENDING")
-                                            .font(.system(size: 14, weight: .black))
-                                            .foregroundColor(.appTextSecondary)
-                                            .kerning(1)
-                                            .padding(.horizontal, 20)
+                                        HStack {
+                                            Text("TRENDING")
+                                                .font(.system(size: 14, weight: .black))
+                                                .foregroundColor(.appTextSecondary)
+                                                .kerning(1)
+                                            
+                                            Spacer()
+                                            
+                                            // Premium Window Toggle
+                                            HStack(spacing: 0) {
+                                                ForEach(["day", "week"], id: \.self) { window in
+                                                    Button(action: {
+                                                        if viewModel.trendingTimeWindow != window {
+                                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                                viewModel.trendingTimeWindow = window
+                                                                Task {
+                                                                    await viewModel.loadTrendingMovies(region: appViewModel.userProfile?.preferredRegion ?? "US")
+                                                                }
+                                                            }
+                                                        }
+                                                    }) {
+                                                        Text(window == "day" ? "TODAY" : "THIS WEEK")
+                                                            .font(.system(size: 10, weight: .black))
+                                                            .padding(.horizontal, 12)
+                                                            .padding(.vertical, 6)
+                                                            .background(
+                                                                viewModel.trendingTimeWindow == window
+                                                                ? Color.appPrimary
+                                                                : Color.clear
+                                                            )
+                                                            .foregroundColor(
+                                                                viewModel.trendingTimeWindow == window
+                                                                ? .black
+                                                                : .appTextSecondary
+                                                            )
+                                                            .cornerRadius(8)
+                                                    }
+                                                }
+                                            }
+                                            .padding(2)
+                                            .background(Color.white.opacity(0.05))
+                                            .cornerRadius(10)
+                                        }
+                                        .padding(.horizontal, 20)
                                         
                                         ScrollView(.horizontal, showsIndicators: false) {
                                             HStack(spacing: 16) {
@@ -271,8 +373,118 @@ struct SearchView: View {
         .fullScreenCover(item: $selectedMovie) { movie in
             MovieDetailView(movieId: movie.id)
         }
-        .task {
-            await viewModel.loadTrendingMovies(region: appViewModel.userProfile?.preferredRegion ?? "US")
+        .sheet(item: $selectedTrailer) { trailer in
+            YouTubeView(videoID: trailer.youtubeKey)
+        }
+        .onAppear {
+            print("🔍 SearchView appeared")
+            print("📊 Trending movies count: \(viewModel.trendingMovies.count)")
+            print("🎬 Trailers count: \(viewModel.latestTrailers.count)")
+            print("⭐ Featured lists count: \(viewModel.featuredLists.count)")
+            
+            // Reload data if empty
+            if viewModel.trendingMovies.isEmpty || viewModel.latestTrailers.isEmpty {
+                print("📥 Loading trending data...")
+                Task {
+                    await viewModel.loadTrendingMovies()
+                    print("✅ Loaded - Trending: \(viewModel.trendingMovies.count), Trailers: \(viewModel.latestTrailers.count)")
+                }
+            }
+        }
+    }
+    
+    private var discoverySwitcher: some View {
+        HStack(spacing: 8) {
+            discoveryTabButton(title: "STAFF PICKS", index: 0)
+            discoveryTabButton(title: "COLLECTIONS", index: 1)
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.05))
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+    }
+    
+    private func discoveryTabButton(title: String, index: Int) -> some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                discoveryTab = index
+            }
+        }) {
+            Text(title)
+                .font(.system(size: 11, weight: .black))
+                .tracking(1)
+                .foregroundColor(discoveryTab == index ? .black : .appTextSecondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background(
+                    ZStack {
+                        if discoveryTab == index {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.appPrimary)
+                                .matchedGeometryEffect(id: "discovery_tab", in: discoveryNamespace)
+                        }
+                    }
+                )
+        }
+    }
+}
+
+struct StaffPickCard: View {
+    let list: CommunityList
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Stacked Posters
+            ZStack(alignment: .bottomTrailing) {
+                // Background shadow glow
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.appPrimary.opacity(0.15))
+                    .frame(width: 140, height: 210)
+                    .blur(radius: 12)
+                    .offset(y: 8)
+                
+                // Poster Stack
+                ForEach(Array(list.movies.prefix(3).enumerated()), id: \.offset) { index, movie in
+                    if let url = movie.posterURL {
+                        CachedAsyncImage(url: url) { image in
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            RoundedRectangle(cornerRadius: 12).fill(Color.appCardBackground)
+                        }
+                        .frame(width: 130, height: 195)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                        .offset(x: CGFloat(index) * -12, y: CGFloat(index) * -10)
+                        .scaleEffect(1.0 - CGFloat(index) * 0.05)
+                        .zIndex(Double(3 - index))
+                    }
+                }
+            }
+            .padding(.leading, 24) // Offset for the stack effect
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(list.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.appText)
+                    .lineLimit(1)
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 10))
+                    Text(list.ownerName)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundColor(.appTextSecondary)
+            }
+            .padding(.leading, 12)
         }
     }
 }

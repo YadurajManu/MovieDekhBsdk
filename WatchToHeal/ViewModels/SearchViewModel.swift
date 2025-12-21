@@ -14,6 +14,9 @@ class SearchViewModel: ObservableObject {
     @Published var searchResults: [Movie] = []
     @Published var recentSearches: [String] = []
     @Published var trendingMovies: [Movie] = []
+    @Published var latestTrailers: [TMDBService.MovieTrailer] = []
+    @Published var featuredLists: [CommunityList] = []
+    @Published var staffPicks: [Movie] = []
     @Published var isSearching = false
     @Published var isLoadingTrending = false
     @Published var errorMessage: String?
@@ -191,14 +194,66 @@ class SearchViewModel: ObservableObject {
         filterState.reset()
     }
     
+    @Published var trendingTimeWindow: String = "day"
+    
     func loadTrendingMovies(region: String = "US") async {
+        print("🔄 loadTrendingMovies called - timeWindow: \(trendingTimeWindow)")
         isLoadingTrending = true
-        do {
-            trendingMovies = try await TMDBService.shared.fetchNowPlaying(region: region)
-        } catch {
-            print("Failed to load trending movies: \(error)")
+        
+        // Fetch trending movies (TMDB)
+        Task {
+            do {
+                let fetchedTrending = try await TMDBService.shared.fetchTrending(timeWindow: trendingTimeWindow)
+                self.trendingMovies = fetchedTrending
+                print("✅ Trending movies: \(fetchedTrending.count)")
+            } catch {
+                print("❌ Failed to load trending: \(error)")
+            }
         }
+        
+        // Fetch latest trailers (TMDB)
+        Task {
+            do {
+                let fetchedTrailers = try await TMDBService.shared.fetchLatestTrailers()
+                self.latestTrailers = fetchedTrailers
+                print("✅ Trailers: \(fetchedTrailers.count)")
+            } catch {
+                print("❌ Failed to load trailers: \(error)")
+            }
+        }
+        
+        // Fetch featured lists (Firestore)
+        Task {
+            do {
+                let fetchedFeatured = try await FirestoreService.shared.fetchFeaturedLists()
+                self.featuredLists = fetchedFeatured
+                print("✅ Featured lists: \(fetchedFeatured.count)")
+            } catch {
+                print("❌ Failed to load featured lists: \(error)")
+            }
+        }
+        
+        // Fetch staff pick movies (Firestore)
+        Task {
+            do {
+                let fetchedPicks = try await FirestoreService.shared.fetchStaffPickMovies()
+                self.staffPicks = fetchedPicks
+                print("✅ Staff pick movies: \(fetchedPicks.count)")
+            } catch {
+                print("❌ Failed to load staff pick movies: \(error)")
+            }
+        }
+        
+        // We set isLoadingTrending to false immediately as the sections will pop in individually
+        // Or we could use a group to wait, but decoupling is better for responsiveness
         isLoadingTrending = false
+    }
+    
+    func toggleTrendingTimeWindow(region: String = "US") {
+        trendingTimeWindow = (trendingTimeWindow == "day") ? "week" : "day"
+        Task {
+            await loadTrendingMovies(region: region)
+        }
     }
     
     func clearSearch() {

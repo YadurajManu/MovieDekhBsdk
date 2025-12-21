@@ -88,6 +88,23 @@ struct ListDetailView: View {
                                     .foregroundColor(.appTextSecondary)
                                     .lineSpacing(4)
                             }
+                            
+                            // Tags Cloud
+                            if !list.tags.isEmpty {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(list.tags, id: \.self) { tag in
+                                            Text(tag)
+                                                .font(.system(size: 10, weight: .black))
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 5)
+                                                .background(Color.appPrimary.opacity(0.1))
+                                                .foregroundColor(.appPrimary)
+                                                .cornerRadius(6)
+                                        }
+                                    }
+                                }
+                            }
                         }
                         .padding(.horizontal, 24)
                         
@@ -116,15 +133,36 @@ struct ListDetailView: View {
                                 .background(Capsule().fill(Color.white.opacity(0.08)))
                             }
                             
-                            Spacer()
+                            if list.isRanked {
+                                Label("RANKED", systemImage: "list.number")
+                                    .font(.system(size: 10, weight: .black))
+                                    .foregroundColor(.appPrimary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color.appPrimary.opacity(0.1))
+                                    .cornerRadius(20)
+                            }
+                            
+                            if list.isFeatured {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "pin.fill")
+                                    Text("STAFF PICK")
+                                }
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(20)
+                            }
                         }
                         .padding(.horizontal, 24)
                         
                         // Movie List - Premium Vertical Layout
-                        VStack(spacing: 12) {
-                            ForEach(list.movies) { movie in
+                        VStack(spacing: 16) {
+                            ForEach(Array(list.movies.enumerated()), id: \.offset) { index, movie in
                                 NavigationLink(destination: MovieDetailView(movieId: movie.id)) {
-                                    DetailedMovieListRow(movie: movie)
+                                    DetailedMovieListRow(movie: movie, index: index + 1, isRanked: list.isRanked)
                                 }
                             }
                         }
@@ -146,8 +184,11 @@ struct ListDetailView: View {
     
     private func toggleLike() {
         guard let userId = appViewModel.currentUser?.uid else { return }
-        isLiked.toggle()
-        internalLikeCount += isLiked ? 1 : -1
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            isLiked.toggle()
+            internalLikeCount += isLiked ? 1 : -1
+        }
         
         Task {
             try? await FirestoreService.shared.likeCommunityList(listId: list.id, userId: userId)
@@ -162,9 +203,19 @@ struct ListDetailView: View {
 
 struct DetailedMovieListRow: View {
     let movie: Movie
+    var index: Int = 0
+    var isRanked: Bool = false
     
     var body: some View {
         HStack(spacing: 14) {
+            if isRanked {
+                Text(String(format: "%02d", index))
+                    .font(.system(size: 24, weight: .black))
+                    .foregroundColor(.white.opacity(0.15))
+                    .frame(width: 44, alignment: .leading)
+                    .lineLimit(1)
+            }
+            
             if let url = movie.posterURL {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
@@ -173,6 +224,10 @@ struct DetailedMovieListRow: View {
                 }
                 .frame(width: 60, height: 90)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
             }
             
             VStack(alignment: .leading, spacing: 4) {
