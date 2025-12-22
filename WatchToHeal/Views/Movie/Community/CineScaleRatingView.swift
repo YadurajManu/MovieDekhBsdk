@@ -5,9 +5,9 @@ struct CineScaleRatingView: View {
     let onRatingSelected: (String) -> Void
     
     private let ratings = [
-        (id: "absolute", title: "Masterpiece", subtitle: "Essential", color: Color.appPrimary, icon: "crown.fill"),
-        (id: "awaara", title: "Recommended", subtitle: "Worth it", color: Color.blue, icon: "hand.thumbsup.fill"),
-        (id: "bakwas", title: "Skippable", subtitle: "Hard pass", color: Color.red, icon: "hand.thumbsdown.fill")
+        (id: "absolute", title: "GoForIt", subtitle: "Must watch", color: Color.appPrimary, icon: "crown.fill"),
+        (id: "awaara", title: "SoSo", subtitle: "Worth a try", color: Color.blue, icon: "hand.thumbsup.fill"),
+        (id: "bakwas", title: "Bakwas", subtitle: "Hard pass", color: Color.red, icon: "hand.thumbsdown.fill")
     ]
     
     var body: some View {

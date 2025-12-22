@@ -39,7 +39,7 @@ struct MovieDetailView: View {
                                 CachedAsyncImage(url: movie.backdropURL ?? movie.posterURL) { image in
                                     image
                                         .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                        .scaledToFill()
                                 } placeholder: {
                                     Rectangle().fill(Color.appCardBackground)
                                 }
@@ -117,13 +117,6 @@ struct MovieDetailView: View {
                             
                             // Info Section
                             VStack(alignment: .leading, spacing: 32) {
-                                // Subtitle / Genres
-                                Text(movie.genreNames)
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.appTextSecondary)
-                                    .padding(.top, 8)
-                                    .kerning(1)
-                                
                                 // Redesigned Premium Action Bar
                                 HStack(spacing: 12) {
                                     if let trailer = movie.youtubeTrailers.first {
@@ -169,28 +162,6 @@ struct MovieDetailView: View {
                                     }
                                 }
                                 
-                                // Where to Watch - Anchored earlier
-                                if let providers = viewModel.watchProviders {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        HStack {
-                                            Text("WHERE TO WATCH")
-                                                .font(.system(size: 10, weight: .black))
-                                                .kerning(2)
-                                                .foregroundColor(.appPrimary)
-                                            Spacer()
-                                            Rectangle().fill(Color.appPrimary.opacity(0.2)).frame(height: 1)
-                                        }
-                                        
-                                        WatchProvidersView(
-                                            providers: providers,
-                                            preferredProviderIds: Set(appViewModel.userProfile?.streamingProviders ?? [])
-                                        )
-                                        .padding(16)
-                                        .background(Color.white.opacity(0.04))
-                                        .cornerRadius(16)
-                                    }
-                                }
-                                
                                 // Cinephile Community Section - Teased earlier
                                 MovieCommunitySection(movieId: movie.id, movieTitle: movie.title, moviePoster: movie.posterPath)
                                 
@@ -220,7 +191,7 @@ struct MovieDetailView: View {
                                                 ForEach(viewModel.cast.prefix(12)) { member in
                                                     VStack(spacing: 12) {
                                                         CachedAsyncImage(url: member.profileURL) { image in
-                                                            image.resizable().aspectRatio(contentMode: .fill)
+                                                            image.resizable().scaledToFill()
                                                         } placeholder: {
                                                             Circle().fill(Color.white.opacity(0.05))
                                                         }
@@ -268,6 +239,28 @@ struct MovieDetailView: View {
                                         }
                                     }
                                 }
+                                
+                                // Where to Watch - Moved to Bottom
+                                if let providers = viewModel.watchProviders {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        HStack {
+                                            Text("WHERE TO WATCH")
+                                                .font(.system(size: 10, weight: .black))
+                                                .kerning(2)
+                                                .foregroundColor(.appPrimary)
+                                            Spacer()
+                                            Rectangle().fill(Color.appPrimary.opacity(0.2)).frame(height: 1)
+                                        }
+                                        
+                                        WatchProvidersView(
+                                            providers: providers,
+                                            preferredProviderIds: Set(appViewModel.userProfile?.streamingProviders ?? [])
+                                        )
+                                        .padding(16)
+                                        .background(Color.white.opacity(0.04))
+                                        .cornerRadius(16)
+                                    }
+                                }
                             }
                             .padding(.horizontal, 24)
                             .padding(.bottom, 60)
@@ -278,16 +271,9 @@ struct MovieDetailView: View {
                 }
                 
                 // Fixed Back Button Overlay
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: 40)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Circle())
-                }
-                .padding(.top, geometry.safeAreaInsets.top + 8)
-                .padding(.leading, 16)
+                GlassBackButton(action: { dismiss() })
+                    .padding(.top, geometry.safeAreaInsets.top - 12)
+                    .padding(.leading, 16)
                 
                 // Elegant Toast Overlay
                 if showToast, let message = toastMessage {

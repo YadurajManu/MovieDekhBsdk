@@ -83,13 +83,23 @@ struct CommunityList: Identifiable, Codable, Hashable {
 extension Movie {
     // Helper to convert movie to dictionary for nested storage in lists
     var dictionary: [String: Any] {
-        return [
+        var dict: [String: Any] = [
             "id": id,
             "title": displayName,
             "posterPath": posterPath ?? "",
             "voteAverage": voteAverage,
             "releaseDate": displayDate
         ]
+        
+        if let runtime = runtime {
+            dict["runtime"] = runtime
+        }
+        
+        if let genres = genres {
+            dict["genres"] = genres.map { ["id": $0.id, "name": $0.name] }
+        }
+        
+        return dict
     }
     
     init?(dictionary: [String: Any]) {
@@ -104,5 +114,15 @@ extension Movie {
                   releaseDate: dictionary["releaseDate"] as? String ?? "",
                   voteAverage: dictionary["voteAverage"] as? Double ?? 0.0,
                   voteCount: 0)
+        
+        self.runtime = dictionary["runtime"] as? Int
+        
+        if let genreData = dictionary["genres"] as? [[String: Any]] {
+            self.genres = genreData.compactMap { data in
+                guard let gid = data["id"] as? Int,
+                      let gname = data["name"] as? String else { return nil }
+                return Genre(id: gid, name: gname)
+            }
+        }
     }
 }

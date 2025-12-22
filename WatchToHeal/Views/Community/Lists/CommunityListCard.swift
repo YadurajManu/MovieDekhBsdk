@@ -30,6 +30,7 @@ struct CommunityListCard: View {
                             .background(Color.appPrimary.opacity(0.1))
                             .foregroundColor(.appPrimary)
                             .cornerRadius(4)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                     
                     if list.isFeatured {
@@ -44,6 +45,7 @@ struct CommunityListCard: View {
                         .background(Color.blue.opacity(0.1))
                         .foregroundColor(.blue)
                         .cornerRadius(4)
+                        .fixedSize(horizontal: true, vertical: false)
                     }
                 }
                 

@@ -83,9 +83,9 @@ struct PublicProfileView: View {
                     
                     // Stats Block - Glassmorphism UI
                     HStack(spacing: 0) {
-                        statItem(value: "\(profile.followerCount)", label: "FOLLOWERS")
+                        statItem(value: "\(max(0, profile.followerCount))", label: "FOLLOWERS")
                         divider
-                        statItem(value: "\(profile.followingCount)", label: "FOLLOWING")
+                        statItem(value: "\(max(0, profile.followingCount))", label: "FOLLOWING")
                         divider
                         statItem(value: "\(profile.topFavorites.count)", label: "FAVORITES")
                     }
@@ -253,6 +253,8 @@ struct PublicProfileView: View {
                 case .friends:
                     try await friendshipManager.removeFriend(userId: currentUserId, friendId: profile.id)
                     appViewModel.fetchUserProfile()
+                    // Small delay to ensure Firestore batch commits before status refresh
+                    try await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                 }
                 await checkFriendshipStatus()
             } catch {

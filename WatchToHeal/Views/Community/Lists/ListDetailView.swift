@@ -8,6 +8,7 @@ struct ListDetailView: View {
     @State private var showComments = false
     @State private var isLiked: Bool = false
     @State private var internalLikeCount: Int = 0
+    @State private var ownerProfile: UserProfile?
     
     init(list: CommunityList) {
         self.list = list
@@ -60,20 +61,46 @@ struct ListDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 32) {
                         // Metadata
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(list.title)
-                                .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 48))
-                                .foregroundColor(.appText)
-                                .lineLimit(2)
+                        VStack(alignment: .leading, spacing: 18) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(list.title)
+                                    .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 48))
+                                    .foregroundColor(.appText)
+                                    .lineLimit(2)
+                                
+                                ListDetailHeaderStats(movies: list.movies)
+                            }
                             
                             HStack(spacing: 12) {
                                 Text("Curated by")
                                     .font(.system(size: 14))
                                     .foregroundColor(.appTextSecondary)
                                 
-                                Text(list.ownerName)
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.appPrimary)
+                                NavigationLink(destination: curatorProfileLink) {
+                                    HStack(spacing: 6) {
+                                        Text(list.ownerName)
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(.appPrimary)
+                                        
+                                        if let profile = ownerProfile {
+                                            if profile.isVerified {
+                                                Image(systemName: "checkmark.seal.fill")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.blue)
+                                            }
+                                            
+                                            if profile.watchedCount > 1000 {
+                                                Text("Top Curator")
+                                                    .font(.system(size: 8, weight: .black))
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.appPrimary.opacity(0.1))
+                                                    .foregroundColor(.appPrimary)
+                                                    .cornerRadius(4)
+                                            }
+                                        }
+                                    }
+                                }
                                 
                                 Spacer()
                                 
@@ -108,55 +135,69 @@ struct ListDetailView: View {
                         }
                         .padding(.horizontal, 24)
                         
-                        // Actions
-                        HStack(spacing: 20) {
-                            Button(action: { toggleLike() }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: isLiked ? "heart.fill" : "heart")
-                                        .foregroundColor(isLiked ? .red : .white)
-                                    Text("\(internalLikeCount)")
+                        // Actions Row - Redesigned for Classy Minimalistic Look
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                // Like Button
+                                Button(action: { toggleLike() }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                                            .foregroundColor(isLiked ? .red : .white)
+                                        Text("\(internalLikeCount)")
+                                            .foregroundColor(.white)
+                                    }
+                                    .font(.system(size: 13, weight: .bold))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(Capsule().fill(Color.white.opacity(0.06)))
+                                    .overlay(Capsule().stroke(Color.white.opacity(0.05), lineWidth: 1))
                                 }
-                                .font(.system(size: 14, weight: .bold))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Capsule().fill(Color.white.opacity(0.08)))
-                            }
-                            
-                            Button(action: { showComments = true }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "bubble.left")
-                                    Text("\(list.commentCount)")
+                                
+                                // Comment Button
+                                Button(action: { showComments = true }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "bubble.left")
+                                            .foregroundColor(.blue)
+                                        Text("\(list.commentCount)")
+                                            .foregroundColor(.white)
+                                    }
+                                    .font(.system(size: 13, weight: .bold))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(Capsule().fill(Color.white.opacity(0.06)))
+                                    .overlay(Capsule().stroke(Color.white.opacity(0.05), lineWidth: 1))
                                 }
-                                .font(.system(size: 14, weight: .bold))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Capsule().fill(Color.white.opacity(0.08)))
-                            }
-                            
-                            if list.isRanked {
-                                Label("RANKED", systemImage: "list.number")
+                                
+                                if list.isRanked {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "list.number")
+                                        Text("RANKED")
+                                    }
                                     .font(.system(size: 10, weight: .black))
                                     .foregroundColor(.appPrimary)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
                                     .background(Color.appPrimary.opacity(0.1))
                                     .cornerRadius(20)
-                            }
-                            
-                            if list.isFeatured {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "pin.fill")
-                                    Text("STAFF PICK")
+                                    .fixedSize(horizontal: true, vertical: false)
                                 }
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(20)
+                                
+                                if list.isFeatured {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "pin.fill")
+                                        Text("STAFF PICK")
+                                    }
+                                    .font(.system(size: 10, weight: .black))
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(20)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                }
                             }
+                            .padding(.horizontal, 24)
                         }
-                        .padding(.horizontal, 24)
                         
                         // Movie List - Premium Vertical Layout
                         VStack(spacing: 16) {
@@ -179,6 +220,7 @@ struct ListDetailView: View {
         }
         .onAppear {
             checkIfLiked()
+            fetchOwnerProfile()
         }
     }
     
@@ -198,6 +240,25 @@ struct ListDetailView: View {
     private func checkIfLiked() {
         guard let userId = appViewModel.currentUser?.uid else { return }
         isLiked = list.likedBy.contains(userId)
+    }
+    
+    @ViewBuilder
+    private var curatorProfileLink: some View {
+        if let profile = ownerProfile {
+            PublicProfileView(profile: profile)
+        } else {
+            ProgressView().tint(.appPrimary)
+        }
+    }
+    
+    private func fetchOwnerProfile() {
+        Task {
+            do {
+                ownerProfile = try await FirestoreService.shared.fetchUserProfile(userId: list.ownerId)
+            } catch {
+                print("Failed to fetch owner profile: \(error)")
+            }
+        }
     }
 }
 

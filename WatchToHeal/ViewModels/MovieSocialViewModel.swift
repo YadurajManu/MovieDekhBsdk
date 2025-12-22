@@ -121,15 +121,25 @@ class MovieSocialViewModel: ObservableObject {
         }
     }
     
-    func fetchReplies(reviewId: String) async -> [MovieReply] {
-        print("🔄 MovieSocialViewModel.fetchReplies called - reviewId: \(reviewId)")
+    func deleteReview(userId: String) async {
+        print("🔄 MovieSocialViewModel.deleteReview called - userId: \(userId)")
         do {
-            let replies = try await firestoreService.fetchMovieReplies(movieId: movieId, reviewId: reviewId)
-            print("✅ Fetched \(replies.count) replies")
-            return replies
+            try await firestoreService.deleteMovieReview(movieId: movieId, userId: userId)
+            print("✅ Review deleted successfully")
+            await loadSocialData()
         } catch {
-            print("❌ Error fetching replies: \(error)")
-            return []
+            print("❌ Error deleting review: \(error)")
+        }
+    }
+    
+    func deleteReply(reviewId: String, replyId: String) async {
+        print("🔄 MovieSocialViewModel.deleteReply called - reviewId: \(reviewId), replyId: \(replyId)")
+        do {
+            try await firestoreService.deleteMovieReply(movieId: movieId, reviewId: reviewId, replyId: replyId)
+            print("✅ Reply deleted successfully")
+            await loadSocialData()
+        } catch {
+            print("❌ Error deleting reply: \(error)")
         }
     }
 }

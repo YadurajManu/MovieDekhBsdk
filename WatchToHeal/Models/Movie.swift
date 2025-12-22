@@ -24,7 +24,11 @@ struct Movie: Identifiable, Codable, Hashable {
     let originalTitle: String?
     let originalName: String? // For TV shows
     
-    init(id: Int, title: String? = nil, name: String? = nil, posterPath: String?, backdropPath: String?, overview: String, releaseDate: String? = nil, firstAirDate: String? = nil, voteAverage: Double, voteCount: Int, originalTitle: String? = nil, originalName: String? = nil, userRating: Int? = nil) {
+    // Extended Metadata
+    var runtime: Int?
+    var genres: [Genre]?
+    
+    init(id: Int, title: String? = nil, name: String? = nil, posterPath: String?, backdropPath: String?, overview: String, releaseDate: String? = nil, firstAirDate: String? = nil, voteAverage: Double, voteCount: Int, originalTitle: String? = nil, originalName: String? = nil, userRating: Int? = nil, runtime: Int? = nil, genres: [Genre]? = nil) {
         self.id = id
         self.title = title
         self.name = name
@@ -38,6 +42,8 @@ struct Movie: Identifiable, Codable, Hashable {
         self.originalTitle = originalTitle
         self.originalName = originalName
         self.userRating = userRating
+        self.runtime = runtime
+        self.genres = genres
     }
     
     enum CodingKeys: String, CodingKey {

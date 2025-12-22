@@ -22,7 +22,7 @@ struct MovieCardView: View {
             CachedAsyncImage(url: movie.posterURL) { image in
                 image
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
             } placeholder: {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white.opacity(0.05))
@@ -32,6 +32,7 @@ struct MovieCardView: View {
                     }
             }
             .frame(width: width, height: width != nil ? width! * 1.5 : nil)
+            .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 4)
             

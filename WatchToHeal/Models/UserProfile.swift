@@ -21,6 +21,10 @@ struct UserProfile: Codable, Identifiable, Hashable {
     var preferredRegion: String
     var streamingProviders: [Int] // IDs of preferred streaming services
     
+    // Authority Stats
+    var isVerified: Bool = false
+    var watchedCount: Int = 0
+    
     // Compatibility init for legacy calls or linker expectations
     init(id: String, 
          username: String? = nil,
@@ -30,6 +34,8 @@ struct UserProfile: Codable, Identifiable, Hashable {
          photoURL: URL? = nil, 
          topFavorites: [Movie] = [],
          isAdmin: Bool = false,
+         isVerified: Bool = false,
+         watchedCount: Int = 0,
          preferredRegion: String = "IN",
          streamingProviders: [Int] = []) {
         self.id = id
@@ -40,6 +46,8 @@ struct UserProfile: Codable, Identifiable, Hashable {
         self.photoURL = photoURL
         self.topFavorites = topFavorites
         self.isAdmin = isAdmin
+        self.isVerified = isVerified
+        self.watchedCount = watchedCount
         self.followerCount = 0
         self.followingCount = 0
         self.isNotificationEnabled = true
@@ -57,6 +65,8 @@ struct UserProfile: Codable, Identifiable, Hashable {
          photoURL: URL?, 
          topFavorites: [Movie],
          isAdmin: Bool = false,
+         isVerified: Bool = false,
+         watchedCount: Int = 0,
          followerCount: Int = 0,
          followingCount: Int = 0,
          isNotificationEnabled: Bool,
@@ -70,6 +80,9 @@ struct UserProfile: Codable, Identifiable, Hashable {
         self.bio = bio
         self.photoURL = photoURL
         self.topFavorites = topFavorites
+        self.isAdmin = isAdmin
+        self.isVerified = isVerified
+        self.watchedCount = watchedCount
         self.followerCount = followerCount
         self.followingCount = followingCount
         self.isNotificationEnabled = isNotificationEnabled

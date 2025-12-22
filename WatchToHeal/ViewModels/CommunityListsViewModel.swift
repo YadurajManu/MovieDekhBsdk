@@ -26,13 +26,28 @@ class CommunityListsViewModel: ObservableObject {
         isSaving = true
         errorMessage = nil
         
+        // 1. Fetch full details for each movie to ensure we have runtime and genres
+        var enrichedMovies: [Movie] = []
+        for var movie in selectedMovies {
+            if movie.runtime == nil || movie.genres == nil {
+                do {
+                    let detail = try await TMDBService.shared.fetchMovieDetail(id: movie.id)
+                    movie.runtime = detail.runtime
+                    movie.genres = detail.genres
+                } catch {
+                    print("Failed to fetch details for enriched movie \(movie.id): \(error)")
+                }
+            }
+            enrichedMovies.append(movie)
+        }
+        
         let newList = CommunityList(
             id: UUID().uuidString,
             ownerId: ownerId,
             ownerName: ownerName,
             title: title,
             description: description,
-            movies: selectedMovies,
+            movies: enrichedMovies,
             isRanked: isRanked,
             isFeatured: false,
             tags: tags,

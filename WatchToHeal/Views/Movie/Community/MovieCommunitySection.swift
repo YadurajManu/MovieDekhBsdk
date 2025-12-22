@@ -103,16 +103,20 @@ struct MovieCommunitySection: View {
                             }
                             
                             TextField("Say why (optional)", text: $reviewContent, axis: .vertical)
-                                .font(.system(size: 14))
+                                .font(.system(size: 13))
                                 .foregroundColor(.appText)
-                                .padding()
-                                .frame(minHeight: 80, alignment: .top)
+                                .padding(12)
+                                .frame(minHeight: 50, alignment: .top)
                                 .background(Color.white.opacity(0.04))
-                                .cornerRadius(12)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                }
                             
                             Text("\(reviewContent.count)/200")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(reviewContent.count > 200 ? .red : .white.opacity(0.3))
                         }
                         

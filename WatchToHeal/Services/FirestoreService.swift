@@ -138,6 +138,11 @@ class FirestoreService {
         let preferredRegion = data["preferredRegion"] as? String ?? "US"
         let streamingProviders = data["streamingProviders"] as? [Int] ?? []
         
+        // Authority Stats
+        let isVerified = data["isVerified"] as? Bool ?? false
+        let watchedCount = data["watchedCount"] as? Int ?? 0
+        let isAdmin = data["isAdmin"] as? Bool ?? false
+        
         return UserProfile(id: userId,
                           username: username,
                           name: name, 
@@ -145,6 +150,9 @@ class FirestoreService {
                           bio: bio, 
                           photoURL: photoURL, 
                           topFavorites: topFavorites,
+                          isAdmin: isAdmin,
+                          isVerified: isVerified,
+                          watchedCount: watchedCount,
                           followerCount: followerCount,
                           followingCount: followingCount,
                           isNotificationEnabled: isNotificationEnabled,
@@ -283,6 +291,13 @@ class FirestoreService {
     func sendFriendRequest(from senderId: String, to recipientId: String) async throws {
         guard senderId != recipientId else { return } // Prevent self-requests
         
+        // Pre-check: ensure we're not already friends or have pending requests
+        let currentStatus = try await checkFriendshipStatus(userId: senderId, otherId: recipientId)
+        guard currentStatus == .none else {
+            print("Cannot send friend request - current status: \(currentStatus)")
+            return
+        }
+        
         let requestData: [String: Any] = [
             "senderId": senderId,
             "timestamp": Timestamp()
@@ -348,6 +363,13 @@ class FirestoreService {
     }
     
     func removeFriend(userId: String, friendId: String) async throws {
+        // First read current counts to prevent negative values
+        let userDoc = try await db.collection("users").document(userId).getDocument(source: .server)
+        let friendDoc = try await db.collection("users").document(friendId).getDocument(source: .server)
+        
+        let currentUserFollowers = max(0, (userDoc.data()?["followerCount"] as? Int ?? 0) - 1)
+        let currentFriendFollowing = max(0, (friendDoc.data()?["followingCount"] as? Int ?? 0) - 1)
+        
         let batch = db.batch()
         
         // Remove friendship from both users
@@ -363,45 +385,45 @@ class FirestoreService {
             .document(userId)
         batch.deleteDocument(friendUserRef)
         
-        // Decrement friend counts
+        // Safe decrement - clamped to 0
         let userRef = db.collection("users").document(userId)
-        batch.updateData(["followerCount": FieldValue.increment(Int64(-1))], forDocument: userRef)
+        batch.updateData(["followerCount": currentUserFollowers], forDocument: userRef)
         
         let friendRef = db.collection("users").document(friendId)
-        batch.updateData(["followingCount": FieldValue.increment(Int64(-1))], forDocument: friendRef)
+        batch.updateData(["followingCount": currentFriendFollowing], forDocument: friendRef)
         
         try await batch.commit()
     }
     
     func checkFriendshipStatus(userId: String, otherId: String) async throws -> FriendshipStatus {
-        // Check if already friends
+        // Force server read to bypass Firestore cache for accurate status
         let friendDoc = try await db.collection("friendships")
             .document(userId)
             .collection("friends")
             .document(otherId)
-            .getDocument()
+            .getDocument(source: .server)
         
         if friendDoc.exists {
             return .friends
         }
         
-        // Check if request sent
+        // Check if request sent - force server read
         let sentRequestDoc = try await db.collection("friendRequests")
             .document(otherId)
             .collection("requests")
             .document(userId)
-            .getDocument()
+            .getDocument(source: .server)
         
         if sentRequestDoc.exists {
             return .requestSent
         }
         
-        // Check if request received
+        // Check if request received - force server read
         let receivedRequestDoc = try await db.collection("friendRequests")
             .document(userId)
             .collection("requests")
             .document(otherId)
-            .getDocument()
+            .getDocument(source: .server)
         
         if receivedRequestDoc.exists {
             return .requestReceived
@@ -481,6 +503,17 @@ class FirestoreService {
         }
     }
     
+    func deleteComment(listId: String, commentId: String) async throws {
+        let listRef = db.collection("communityLists").document(listId)
+        let commentRef = listRef.collection("comments").document(commentId)
+        
+        try await db.runTransaction { (transaction, _) -> Any? in
+            transaction.updateData(["commentCount": FieldValue.increment(Int64(-1))], forDocument: listRef)
+            transaction.deleteDocument(commentRef)
+            return nil
+        }
+    }
+    
     func fetchComments(listId: String) async throws -> [Comment] {
         let snapshot = try await db.collection("communityLists").document(listId).collection("comments")
             .order(by: "createdAt", descending: true)
@@ -552,12 +585,25 @@ class FirestoreService {
                 stats = (try? Firestore.Decoder().decode(MovieSocialStats.self, from: data)) ?? MovieSocialStats()
             }
             
-            // 2. Check if user already reviewed to avoid double-counting increments
-            // For now, we'll increment for every submission for simplicity, 
-            // but in a production app we'd verify if user.id already exists in reviews.
+            // 2. Check if user already reviewed
+            let reviewRef = socialRef.collection("reviews").document(user.id)
+            let existingDoc = try? transaction.getDocument(reviewRef)
             
-            // 3. Update stats
-            stats.totalVotes += 1
+            if existingDoc != nil && existingDoc!.exists {
+                // Decrement old stats if updating
+                if let oldReview = try? existingDoc?.data(as: MovieReview.self) {
+                    stats.ratingCounts[oldReview.rating, default: 1] -= 1
+                    for tag in oldReview.genreTags {
+                        stats.genreConsensus[tag, default: 1] -= 1
+                    }
+                    // totalVotes stays the same since we're just updating
+                }
+            } else {
+                // New vote
+                stats.totalVotes += 1
+            }
+            
+            // 3. Update stats with new values
             stats.ratingCounts[rating, default: 0] += 1
             for tag in genreTags {
                 stats.genreConsensus[tag, default: 0] += 1
@@ -601,6 +647,41 @@ class FirestoreService {
                 rating: rating
             )
             try? await self.logActivity(userId: user.id, activity: activity)
+        }
+    }
+    
+    func deleteMovieReview(movieId: Int, userId: String) async throws {
+        let socialRef = db.collection("movieSocial").document("\(movieId)")
+        let reviewRef = socialRef.collection("reviews").document(userId)
+        
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
+            let reviewDoc: DocumentSnapshot
+            do {
+                reviewDoc = try transaction.getDocument(reviewRef)
+            } catch {
+                return nil
+            }
+            
+            guard let review = try? reviewDoc.data(as: MovieReview.self) else { return nil }
+            
+            // 1. Prepare updates for stats
+            var updates: [String: Any] = [
+                "totalVotes": FieldValue.increment(Int64(-1)),
+                "ratingCounts.\(review.rating)": FieldValue.increment(Int64(-1)),
+                "lastUpdated": Date()
+            ]
+            
+            // 2. Decrement genre tag counts
+            for tag in review.genreTags {
+                updates["genreConsensus.\(tag)"] = FieldValue.increment(Int64(-1))
+            }
+            
+            transaction.updateData(updates, forDocument: socialRef)
+            
+            // 3. Delete review
+            transaction.deleteDocument(reviewRef)
+            
+            return nil
         }
     }
     
@@ -715,6 +796,20 @@ class FirestoreService {
                 content: content
             )
             try? await self.logActivity(userId: user.id, activity: activity)
+        }
+    }
+    
+    func deleteMovieReply(movieId: Int, reviewId: String, replyId: String) async throws {
+        let reviewRef = db.collection("movieSocial")
+            .document("\(movieId)")
+            .collection("reviews")
+            .document(reviewId)
+        let replyRef = reviewRef.collection("replies").document(replyId)
+        
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
+            transaction.updateData(["repliesCount": FieldValue.increment(Int64(-1))], forDocument: reviewRef)
+            transaction.deleteDocument(replyRef)
+            return nil
         }
     }
     

@@ -287,7 +287,7 @@ struct RatingBadge: View {
     let rating: String
     
     var body: some View {
-        Text(rating.uppercased())
+        Text(labelForRating(rating))
             .font(.system(size: 9, weight: .black))
             .foregroundColor(.black)
             .padding(.horizontal, 8)
@@ -302,6 +302,15 @@ struct RatingBadge: View {
         case "awaara": return .orange
         case "bakwas": return .red
         default: return .appPrimary
+        }
+    }
+    
+    private func labelForRating(_ rating: String) -> String {
+        switch rating.lowercased() {
+        case "absolute": return "GOFORIT"
+        case "awaara": return "SOSO"
+        case "bakwas": return "BAKWAS"
+        default: return rating.uppercased()
         }
     }
 }

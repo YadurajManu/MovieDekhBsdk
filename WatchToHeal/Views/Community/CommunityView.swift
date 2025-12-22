@@ -237,31 +237,54 @@ struct UserSearchResultRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // Profile Photo
             if let photoURL = user.photoURL {
                 CachedAsyncImage(url: photoURL) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Circle().fill(Color.appCardBackground)
                 }
-                .frame(width: 50, height: 50)
+                .frame(width: 56, height: 56)
                 .clipShape(Circle())
+                .overlay(Circle().stroke(Color.appPrimary.opacity(0.3), lineWidth: 1))
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
-                    .frame(width: 50, height: 50)
+                    .frame(width: 56, height: 56)
                     .foregroundColor(.appTextSecondary.opacity(0.3))
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Name
                 Text(user.name)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.appText)
                 
+                // Username
                 if let username = user.username {
                     Text("@\(username)")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.appPrimary)
                 }
+                
+                // Activity Stats Row
+                HStack(spacing: 12) {
+                    // Favorites Count
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 9))
+                        Text("\(user.topFavorites.count)")
+                    }
+                    
+                    // Followers Count
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.2.fill")
+                            .font(.system(size: 9))
+                        Text("\(max(0, user.followerCount))")
+                    }
+                }
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(.appTextSecondary.opacity(0.6))
             }
             
             Spacer()

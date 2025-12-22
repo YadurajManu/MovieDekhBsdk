@@ -244,9 +244,9 @@ struct ProfileView: View {
                              .padding(.top, -8)
                         }
                         
-                        // Top 3 Favorites Section (3D Rotating Stack)
+                        // Top Favorites Section - Simple Horizontal Row (Letterboxd style)
                         if let topMovies = appViewModel.userProfile?.topFavorites, !topMovies.isEmpty {
-                            VStack(alignment: .leading, spacing: 20) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 HStack(alignment: .bottom) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("CINEMATIC HALL OF FAME")
@@ -270,62 +270,38 @@ struct ProfileView: View {
                                 }
                                 .padding(.horizontal, 24)
                                 
-                                ZStack {
-                                    HStack(spacing: -30) {
-                                        ForEach(Array(topMovies.prefix(3).enumerated()), id: \.offset) { index, movie in
-                                            let relativeIndex = CGFloat(index) - 1.0
-                                            
-                                            ZStack(alignment: .bottomTrailing) {
-                                                CachedAsyncImage(url: movie.posterURL) { image in
-                                                    image.resizable().aspectRatio(contentMode: .fill)
-                                                } placeholder: {
-                                                    RoundedRectangle(cornerRadius: 16)
-                                                        .fill(Color.white.opacity(0.05))
-                                                }
-                                                .frame(width: 140, height: 210)
-                                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
-                                                .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 10)
-                                                
-                                                Text("\(index + 1)")
-                                                    .font(.system(size: 12, weight: .black))
-                                                    .foregroundColor(.black)
-                                                    .frame(width: 24, height: 24)
-                                                    .background(Color.appPrimary)
-                                                    .clipShape(Circle())
-                                                    .offset(x: 8, y: 8)
+                                // Simple Horizontal Poster Row
+                                HStack(spacing: 12) {
+                                    ForEach(Array(topMovies.prefix(5).enumerated()), id: \.offset) { index, movie in
+                                        ZStack(alignment: .bottomTrailing) {
+                                            CachedAsyncImage(url: movie.posterURL) { image in
+                                                image.resizable().aspectRatio(contentMode: .fill)
+                                            } placeholder: {
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(Color.white.opacity(0.05))
                                             }
-                                            .rotation3DEffect(
-                                                .degrees(Double(relativeIndex * 25) + Double(rotationOffset / 10)),
-                                                axis: (x: 0, y: 1, z: 0)
+                                            .frame(width: 70, height: 105)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
                                             )
-                                            .scaleEffect(index == 1 ? 1.1 : 0.9)
-                                            .zIndex(index == 1 ? 10 : Double(1 - abs(Int(relativeIndex))))
+                                            .shadow(color: .black.opacity(0.4), radius: 5, x: 0, y: 3)
+                                            
+                                            // Rank Badge
+                                            Text("\(index + 1)")
+                                                .font(.system(size: 10, weight: .black))
+                                                .foregroundColor(.black)
+                                                .frame(width: 18, height: 18)
+                                                .background(Color.appPrimary)
+                                                .clipShape(Circle())
+                                                .offset(x: 5, y: 5)
                                         }
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 40)
-                                    .background(
-                                        Ellipse()
-                                            .fill(Color.appPrimary.opacity(0.15))
-                                            .blur(radius: 50)
-                                            .frame(width: 250, height: 120)
-                                            .offset(y: 80)
-                                    )
-                                    .gesture(
-                                        DragGesture()
-                                            .onChanged { value in
-                                                rotationOffset = value.translation.width
-                                            }
-                                            .onEnded { _ in
-                                                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                                    rotationOffset = 0
-                                                }
-                                            }
-                                    )
                                 }
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                             }
+                            .padding(.bottom, 16)
                         }
 
                         // Menu Sections

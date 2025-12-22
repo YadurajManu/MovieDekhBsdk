@@ -78,58 +78,53 @@ struct ReviewRow: View {
     @EnvironmentObject var appViewModel: AppViewModel
     
     @State private var isRevealed = false
-    @State private var showReplies = false
-    @State private var replies: [MovieReply] = []
-    @State private var newReplyText = ""
-    @State private var isReplying = false
-    @State private var isLoadingReplies = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
                 if let photoURL = review.userPhoto, let url = URL(string: photoURL) {
                     CachedAsyncImage(url: url) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
+                        image.resizable().scaledToFill()
                     } placeholder: {
                         Circle().fill(Color.appCardBackground)
                     }
-                    .frame(width: 32, height: 32)
+                    .frame(width: 28, height: 28)
                     .clipShape(Circle())
                 } else {
                     Image(systemName: "person.circle.fill")
                         .resizable()
-                        .frame(width: 32, height: 32)
+                        .frame(width: 28, height: 28)
                         .foregroundColor(.appTextSecondary.opacity(0.3))
                 }
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(review.username)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.appText)
                     Text(review.timestamp, style: .relative)
-                        .font(.system(size: 10))
+                        .font(.system(size: 9))
                         .foregroundColor(.appTextSecondary)
                 }
                 
                 Spacer()
                 
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     if review.isSpoiler {
                         Text("SPOILER")
-                            .font(.system(size: 8, weight: .black))
+                            .font(.system(size: 7, weight: .black))
                             .foregroundColor(.red)
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 5)
                             .padding(.vertical, 2)
                             .background(Color.red.opacity(0.1))
-                            .cornerRadius(4)
+                            .cornerRadius(3)
                     }
                     
                     let color = colorForRating(review.rating)
-                    Text(review.rating.uppercased())
+                    Text(labelForRating(review.rating))
                         .font(.system(size: 8, weight: .black))
                         .foregroundColor(color)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
                         .background(color.opacity(0.1))
                         .cornerRadius(4)
                 }
@@ -137,160 +132,59 @@ struct ReviewRow: View {
             
             ZStack {
                 Text(review.content)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13))
                     .foregroundColor(.appTextSecondary)
-                    .lineSpacing(4)
-                    .blur(radius: (review.isSpoiler && !isRevealed) ? 12 : 0)
+                    .lineSpacing(3)
+                    .blur(radius: (review.isSpoiler && !isRevealed) ? 10 : 0)
                 
                 if review.isSpoiler && !isRevealed {
                     Button(action: { withAnimation { isRevealed = true } }) {
-                        Text("TAP TO REVEAL SPOILER")
-                            .font(.system(size: 10, weight: .black))
+                        Text("TAP TO REVEAL")
+                            .font(.system(size: 9, weight: .black))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
                             .background(Color.black.opacity(0.5))
-                            .cornerRadius(20)
+                            .cornerRadius(16)
                     }
                 }
             }
             
             if !review.genreTags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         ForEach(review.genreTags, id: \.self) { tag in
                             Text(tag)
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.system(size: 8, weight: .bold))
                                 .foregroundColor(.appPrimary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
                                 .background(Color.appPrimary.opacity(0.1))
-                                .cornerRadius(8)
+                                .cornerRadius(6)
                         }
                     }
                 }
-                .blur(radius: (review.isSpoiler && !isRevealed) ? 8 : 0)
-            }
-            
-            // Social Actions
-            HStack(spacing: 20) {
-                // Like Button
-                Button(action: {
-                    guard let userId = appViewModel.userProfile?.id, let reviewId = review.id else { 
-                        print("⚠️ Cannot like: userId=\(appViewModel.userProfile?.id ?? "nil"), reviewId=\(review.id ?? "nil")")
-                        return 
-                    }
-                    print("❤️ Toggling like for review: \(reviewId)")
-                    Task { await viewModel.toggleLike(reviewId: reviewId, userId: userId) }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: review.likedBy.contains(appViewModel.userProfile?.id ?? "") ? "heart.fill" : "heart")
-                            .foregroundColor(review.likedBy.contains(appViewModel.userProfile?.id ?? "") ? .red : .appTextSecondary)
-                        Text("\(review.likesCount)")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.appTextSecondary)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-                
-                // Reply Button
-                Button(action: {
-                    print("💬 Toggling replies for review: \(review.id ?? "unknown")")
-                    withAnimation {
-                        if !showReplies {
-                            loadReplies()
-                        }
-                        showReplies.toggle()
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bubble.left")
-                        Text("\(review.repliesCount)")
-                            .font(.system(size: 12, weight: .bold))
-                    }
-                    .foregroundColor(.appTextSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-                
-                Spacer()
-            }
-            .padding(.top, 4)
-            
-            if showReplies {
-                VStack(alignment: .leading, spacing: 12) {
-                    if isLoadingReplies {
-                        ProgressView().tint(.appPrimary).frame(maxWidth: .infinity)
-                    } else {
-                        ForEach(replies) { reply in
-                            ReplyRow(reply: reply)
-                        }
-                        
-                        // New Reply Input
-                        HStack(spacing: 12) {
-                            TextField("Write a reply...", text: $newReplyText)
-                                .font(.system(size: 13))
-                                .padding(10)
-                                .background(Color.white.opacity(0.05))
-                                .cornerRadius(10)
-                            
-                            Button(action: postReply) {
-                                Image(systemName: "paperplane.fill")
-                                    .foregroundColor(newReplyText.isEmpty ? .appTextSecondary : .appPrimary)
-                            }
-                            .disabled(newReplyText.isEmpty || isReplying)
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-                .padding(.leading, 12)
-                .padding(.top, 8)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .blur(radius: (review.isSpoiler && !isRevealed) ? 6 : 0)
             }
         }
-        .padding(16)
+        .padding(12)
         .background(Color.white.opacity(0.03))
-        .cornerRadius(20)
+        .cornerRadius(14)
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 14)
                 .stroke(review.isSpoiler ? Color.red.opacity(0.2) : Color.white.opacity(0.05), lineWidth: 1)
         )
-    }
-    
-    private func loadReplies() {
-        guard let reviewId = review.id else { return }
-        isLoadingReplies = true
-        Task {
-            let fetched = await viewModel.fetchReplies(reviewId: reviewId)
-            await MainActor.run {
-                self.replies = fetched
-                self.isLoadingReplies = false
+        .contentShape(Rectangle())
+        .contextMenu {
+            if review.userId == appViewModel.userProfile?.id {
+                Button(role: .destructive) {
+                    Task {
+                        await viewModel.deleteReview(userId: review.userId)
+                    }
+                } label: {
+                    Label("Delete Review", systemImage: "trash")
+                }
             }
-        }
-    }
-    
-    private func postReply() {
-        guard let reviewId = review.id, let user = appViewModel.userProfile else { 
-            print("⚠️ Cannot post reply: reviewId=\(review.id ?? "nil"), user=\(appViewModel.userProfile?.name ?? "nil")")
-            return 
-        }
-        guard !newReplyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            print("⚠️ Cannot post empty reply")
-            return
-        }
-        
-        print("📝 Posting reply to review: \(reviewId)")
-        isReplying = true
-        Task {
-            await viewModel.postReply(reviewId: reviewId, content: newReplyText, user: user)
-            await MainActor.run {
-                newReplyText = ""
-                isReplying = false
-            }
-            loadReplies()
         }
     }
     
@@ -302,10 +196,21 @@ struct ReviewRow: View {
         default: return .appTextSecondary
         }
     }
+    
+    private func labelForRating(_ rating: String) -> String {
+        switch rating {
+        case "absolute": return "GOFORIT"
+        case "awaara": return "SOSO"
+        case "bakwas": return "BAKWAS"
+        default: return rating.uppercased()
+        }
+    }
 }
 
 struct ReplyRow: View {
     let reply: MovieReply
+    let onDelete: () -> Void
+    @EnvironmentObject var appViewModel: AppViewModel
     
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -341,5 +246,15 @@ struct ReplyRow: View {
             }
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .contextMenu {
+            if reply.userId == appViewModel.userProfile?.id {
+                Button(role: .destructive) {
+                    onDelete()
+                } label: {
+                    Label("Delete Reply", systemImage: "trash")
+                }
+            }
+        }
     }
 }

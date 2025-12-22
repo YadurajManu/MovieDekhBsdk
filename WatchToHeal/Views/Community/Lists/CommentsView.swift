@@ -31,7 +31,9 @@ struct CommentsView: View {
                         ScrollView {
                             LazyVStack(spacing: 24) {
                                 ForEach(comments) { comment in
-                                    CommentRow(comment: comment)
+                                    CommentRow(comment: comment) {
+                                        deleteComment(comment)
+                                    }
                                 }
                             }
                             .padding(24)
@@ -116,10 +118,22 @@ struct CommentsView: View {
             try? await FirestoreService.shared.addComment(listId: listId, comment: newComment)
         }
     }
+    
+    private func deleteComment(_ comment: Comment) {
+        withAnimation {
+            comments.removeAll { $0.id == comment.id }
+        }
+        
+        Task {
+            try? await FirestoreService.shared.deleteComment(listId: listId, commentId: comment.id)
+        }
+    }
 }
 
 struct CommentRow: View {
     let comment: Comment
+    let onDelete: () -> Void
+    @EnvironmentObject var appViewModel: AppViewModel
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -154,6 +168,16 @@ struct CommentRow: View {
                     .font(.system(size: 14))
                     .foregroundColor(.appTextSecondary)
                     .lineSpacing(4)
+            }
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            if comment.userId == appViewModel.userProfile?.id {
+                Button(role: .destructive) {
+                    onDelete()
+                } label: {
+                    Label("Delete Comment", systemImage: "trash")
+                }
             }
         }
     }
