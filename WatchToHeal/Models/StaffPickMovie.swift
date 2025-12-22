@@ -28,11 +28,11 @@ struct StaffPickMovie: Identifiable, Codable {
     
     init(movie: Movie, addedAt: Date = Date()) {
         self.id = movie.id
-        self.title = movie.title
+        self.title = movie.displayName
         self.posterPath = movie.posterPath
         self.backdropPath = movie.backdropPath
         self.overview = movie.overview
-        self.releaseDate = movie.releaseDate
+        self.releaseDate = movie.displayDate
         self.voteAverage = movie.voteAverage
         self.voteCount = movie.voteCount
         self.addedAt = addedAt

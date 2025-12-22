@@ -231,7 +231,7 @@ struct DetailedMovieListRow: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(movie.title)
+                Text(movie.displayName)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.appText)
                     .lineLimit(1)

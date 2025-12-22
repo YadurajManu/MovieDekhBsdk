@@ -23,12 +23,28 @@ class TMDBService {
     
     private init() {}
     
-    func fetchTrending(timeWindow: String = "day") async throws -> [Movie] {
-        let urlString = "\(baseURL)/trending/movie/\(timeWindow)?api_key=\(apiKey)"
-        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
-        let (data, _) = try await urlSession.data(from: url)
-        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
-        return response.results
+    func fetchTrending(timeWindow: String = "day", region: String = "US") async throws -> [Movie] {
+        // Trending endpoint doesn't strictly support region filtering in the URL as per docs,
+        // but we can pass it if supported or rely on Discover for region-specific trends.
+        // However, for pure Trending, TMDB returns global.
+        // To get "Trending in Region", we often use /movie/popular with region param or /discover/movie.
+        // Let's swap to /movie/now_playing or /discover/movie for "Trending in IN" behavior if strictly requested,
+        // OR just pass the region to let TMDB handle availability if possible.
+        //
+        // BETTER APPROACH for "Trending in India": Use /discover/movie?sort_by=popularity.desc&region=IN
+        if region != "US" {
+            let urlString = "\(baseURL)/discover/movie?api_key=\(apiKey)&language=en-US&sort_by=popularity.desc&region=\(region)&page=1"
+            guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+            let (data, _) = try await urlSession.data(from: url)
+            let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+            return response.results
+        } else {
+            let urlString = "\(baseURL)/trending/movie/\(timeWindow)?api_key=\(apiKey)"
+            guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+            let (data, _) = try await urlSession.data(from: url)
+            let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+            return response.results
+        }
     }
     
     func fetchMoviesByGenre(genreId: Int, page: Int = 1) async throws -> [Movie] {
@@ -60,6 +76,7 @@ class TMDBService {
     }
     
     func fetchUpcoming(region: String = "US", page: Int = 1) async throws -> [Movie] {
+        // Force region to ensure localized results
         let urlString = "\(baseURL)/movie/upcoming?api_key=\(apiKey)&language=en-US&region=\(region)&page=\(page)"
         guard let url = URL(string: urlString) else { throw URLError(.badURL) }
         let (data, _) = try await urlSession.data(from: url)
@@ -92,6 +109,15 @@ class TMDBService {
     func searchMovies(query: String) async throws -> [Movie] {
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let urlString = "\(baseURL)/search/movie?api_key=\(apiKey)&language=en-US&query=\(encodedQuery)&page=1"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+        return response.results
+    }
+    
+    func searchTV(query: String) async throws -> [Movie] {
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "\(baseURL)/search/tv?api_key=\(apiKey)&language=en-US&query=\(encodedQuery)&page=1"
         guard let url = URL(string: urlString) else { throw URLError(.badURL) }
         let (data, _) = try await urlSession.data(from: url)
         let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
@@ -230,6 +256,57 @@ class TMDBService {
         let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
         return response.results.shuffled()
     }
+    
+    // MARK: - TV Series Methods
+    
+    func fetchTrendingTV(timeWindow: String = "day") async throws -> [Movie] {
+        let urlString = "\(baseURL)/trending/tv/\(timeWindow)?api_key=\(apiKey)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+        return response.results
+    }
+    
+    func fetchTVByGenre(genreId: Int, page: Int = 1) async throws -> [Movie] {
+        let urlString = "\(baseURL)/discover/tv?api_key=\(apiKey)&language=en-US&sort_by=popularity.desc&with_genres=\(genreId)&page=\(page)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+        return response.results
+    }
+    
+    func fetchTVByProvider(providerId: Int, region: String = "US", page: Int = 1) async throws -> [Movie] {
+        let urlString = "\(baseURL)/discover/tv?api_key=\(apiKey)&language=en-US&sort_by=popularity.desc&watch_region=\(region)&with_watch_providers=\(providerId)&page=\(page)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+        return response.results
+    }
+    
+    func fetchTopRatedTV(page: Int = 1) async throws -> [Movie] {
+        let urlString = "\(baseURL)/tv/top_rated?api_key=\(apiKey)&language=en-US&page=\(page)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+        return response.results
+    }
+    
+    func fetchTVDetail(id: Int) async throws -> TVDetail {
+        let appendToResponse = "credits,videos,images,similar,recommendations,watch/providers"
+        let urlString = "\(baseURL)/tv/\(id)?api_key=\(apiKey)&append_to_response=\(appendToResponse)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        return try JSONDecoder().decode(TVDetail.self, from: data)
+    }
+    
+    func fetchTVWatchProviders(tvId: Int, region: String = "US") async throws -> WatchProvidersResponse.CountryProviders? {
+        let urlString = "\(baseURL)/tv/\(tvId)/watch/providers?api_key=\(apiKey)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(WatchProvidersResponse.self, from: data)
+        return response.results[region]
+    }
+
     
     // MARK: - Additional Genre Methods
     
@@ -505,13 +582,13 @@ class TMDBService {
                 if let trailer = detail.youtubeTrailers.first {
                     trailers.append(MovieTrailer(
                         id: movie.id,
-                        movieTitle: movie.title,
+                        movieTitle: movie.displayName,
                         backdropPath: movie.backdropPath ?? movie.posterPath,
                         youtubeKey: trailer.key
                     ))
                 }
             } catch {
-                print("Error fetching trailer for \(movie.title): \(error)")
+                print("Error fetching trailer for \(movie.displayName): \(error)")
             }
         }
         

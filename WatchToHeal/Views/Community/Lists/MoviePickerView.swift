@@ -86,11 +86,13 @@ struct MoviePickerView: View {
                                     ForEach(searchViewModel.multiSearchResults.filter { $0.mediaType == .movie }) { result in
                                         let movie = Movie(
                                             id: result.id,
-                                            title: result.title ?? "",
+                                            title: result.title,
+                                            name: result.name,
                                             posterPath: result.posterPath,
                                             backdropPath: nil,
                                             overview: result.overview ?? "",
-                                            releaseDate: result.releaseDate ?? "",
+                                            releaseDate: result.releaseDate,
+                                            firstAirDate: result.firstAirDate,
                                             voteAverage: result.voteAverage ?? 0.0,
                                             voteCount: result.voteCount ?? 0
                                         )
@@ -129,7 +131,7 @@ struct MoviePickerRow: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(movie.title)
+                    Text(movie.displayName)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.appText)
                     Text(movie.year)

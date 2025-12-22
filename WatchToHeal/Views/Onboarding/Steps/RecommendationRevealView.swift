@@ -37,7 +37,7 @@ struct RecommendationRevealView: View {
                     }
                     .frame(height: 350)
                     
-                    Text(movie.title)
+                    Text(movie.displayName)
                         .font(.title)
                         .bold()
                         .multilineTextAlignment(.center)

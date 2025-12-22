@@ -54,7 +54,7 @@ struct MovieSearchSheet: View {
                                             .clipShape(RoundedRectangle(cornerRadius: 12))
                                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
                                             
-                                            Text(movie.title)
+                                            Text(movie.displayName)
                                                 .font(.system(size: 12, weight: .bold))
                                                 .foregroundColor(.white)
                                                 .lineLimit(1)

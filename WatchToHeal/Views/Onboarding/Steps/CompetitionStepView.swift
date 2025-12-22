@@ -46,7 +46,7 @@ struct CompetitionStepView: View {
                                         .stroke(viewModel.winnerId == movie.id ? Color.appPrimary : Color.clear, lineWidth: 4)
                                 )
                                 
-                                Text(movie.title)
+                                Text(movie.displayName)
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .lineLimit(2)

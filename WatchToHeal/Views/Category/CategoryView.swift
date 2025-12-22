@@ -37,6 +37,19 @@ enum MovieCategory: String, Identifiable, CaseIterable {
     case amazon = "New on Amazon Prime"
     case appleTV = "New on Apple TV+"
     
+    // TV Series Categories
+    case popularSeries = "Popular TV Shows"
+    case topRatedSeries = "Critically Acclaimed TV"
+    case netflixSeries = "Netflix Series"
+    case disneySeries = "Disney+ Series"
+    case amazonSeries = "Amazon Prime Series"
+    case appleTVSeries = "Apple TV+ Series"
+    case actionSeries = "Action & Adventure TV"
+    case comedySeries = "Comedy TV"
+    case dramaSeries = "TV Dramas"
+    case sciFiSeries = "Sci-Fi & Fantasy TV"
+    case mysterySeries = "Mystery TV"
+    
     var id: String { rawValue }
 }
 

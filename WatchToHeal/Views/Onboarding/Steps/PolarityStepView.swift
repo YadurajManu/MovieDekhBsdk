@@ -56,7 +56,7 @@ struct PolarityStepView: View {
                                     .opacity(currentSentiment == .unseen ? 0.6 : 1.0)
                                     
                                     // Title
-                                    Text(movie.title)
+                                    Text(movie.displayName)
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(currentSentiment == .unseen ? .appTextSecondary : .appText)
                                         .lineLimit(2)

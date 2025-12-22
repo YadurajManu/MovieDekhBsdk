@@ -29,7 +29,9 @@ struct UserProfile: Codable, Identifiable, Hashable {
          bio: String = "", 
          photoURL: URL? = nil, 
          topFavorites: [Movie] = [],
-         isAdmin: Bool = false) {
+         isAdmin: Bool = false,
+         preferredRegion: String = "IN",
+         streamingProviders: [Int] = []) {
         self.id = id
         self.username = username
         self.name = name
@@ -42,8 +44,8 @@ struct UserProfile: Codable, Identifiable, Hashable {
         self.followingCount = 0
         self.isNotificationEnabled = true
         self.showAdultContent = false
-        self.preferredRegion = "US"
-        self.streamingProviders = []
+        self.preferredRegion = preferredRegion
+        self.streamingProviders = streamingProviders
     }
 
     // Full init

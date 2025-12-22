@@ -195,7 +195,7 @@ struct CreateCommunityListView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(movie.title)
+                        Text(movie.displayName)
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.appText)
                         Text(movie.year)

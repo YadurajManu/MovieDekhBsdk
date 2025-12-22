@@ -9,39 +9,59 @@ import Foundation
 
 struct Movie: Identifiable, Codable, Hashable {
     let id: Int
-    let title: String
+    let title: String? // Optional for TV shows
+    let name: String? // For TV shows
     let posterPath: String?
     let backdropPath: String?
     let overview: String
-    let releaseDate: String
+    let releaseDate: String? // Optional for TV shows
+    let firstAirDate: String? // For TV shows
     let voteAverage: Double
     let voteCount: Int
     
     // Local State
     var userRating: Int?
     let originalTitle: String?
+    let originalName: String? // For TV shows
     
-    init(id: Int, title: String, posterPath: String?, backdropPath: String?, overview: String, releaseDate: String, voteAverage: Double, voteCount: Int, originalTitle: String? = nil, userRating: Int? = nil) {
+    init(id: Int, title: String? = nil, name: String? = nil, posterPath: String?, backdropPath: String?, overview: String, releaseDate: String? = nil, firstAirDate: String? = nil, voteAverage: Double, voteCount: Int, originalTitle: String? = nil, originalName: String? = nil, userRating: Int? = nil) {
         self.id = id
         self.title = title
+        self.name = name
         self.posterPath = posterPath
         self.backdropPath = backdropPath
         self.overview = overview
         self.releaseDate = releaseDate
+        self.firstAirDate = firstAirDate
         self.voteAverage = voteAverage
         self.voteCount = voteCount
         self.originalTitle = originalTitle
+        self.originalName = originalName
         self.userRating = userRating
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, title, overview
+        case id, title, name, overview
         case originalTitle = "original_title"
+        case originalName = "original_name"
         case posterPath = "poster_path"
         case backdropPath = "backdrop_path"
         case releaseDate = "release_date"
+        case firstAirDate = "first_air_date"
         case voteAverage = "vote_average"
         case voteCount = "vote_count"
+    }
+    
+    var displayName: String {
+        title ?? name ?? "Unknown"
+    }
+    
+    var displayDate: String {
+        releaseDate ?? firstAirDate ?? ""
+    }
+    
+    var displayYear: String {
+        String(displayDate.prefix(4))
     }
     
     var posterURL: URL? {
@@ -55,7 +75,7 @@ struct Movie: Identifiable, Codable, Hashable {
     }
     
     var year: String {
-        String(releaseDate.prefix(4))
+        displayYear
     }
     
     var rating: String {

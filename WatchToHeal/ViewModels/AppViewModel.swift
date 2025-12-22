@@ -44,7 +44,9 @@ class AppViewModel: ObservableObject {
                                                               email: user.email ?? "",
                                                               bio: "",
                                                               photoURL: user.photoURL,
-                                                              topFavorites: [])
+                                                              topFavorites: [],
+                                                              preferredRegion: "IN", // Default to India
+                                                              streamingProviders: [])
                             }
                             self?.isCheckingAuth = false
                         }

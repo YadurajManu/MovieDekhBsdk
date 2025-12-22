@@ -85,10 +85,10 @@ extension Movie {
     var dictionary: [String: Any] {
         return [
             "id": id,
-            "title": title,
+            "title": displayName,
             "posterPath": posterPath ?? "",
             "voteAverage": voteAverage,
-            "releaseDate": releaseDate
+            "releaseDate": displayDate
         ]
     }
     

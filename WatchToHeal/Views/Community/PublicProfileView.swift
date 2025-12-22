@@ -328,7 +328,7 @@ struct MinimalPosterCard: View {
             }
             .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
             
-            Text(movie.title)
+            Text(movie.displayName)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(.appText)
                 .lineLimit(1)

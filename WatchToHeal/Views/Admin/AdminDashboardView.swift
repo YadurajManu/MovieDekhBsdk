@@ -844,11 +844,11 @@ struct AdminStaffPickMoviesView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(movie.title)
+                    Text(movie.displayName)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.appText)
                         .lineLimit(1)
-                    Text(movie.releaseDate.prefix(4))
+                    Text(movie.displayDate.prefix(4))
                         .font(.system(size: 12))
                         .foregroundColor(.appTextSecondary)
                 }

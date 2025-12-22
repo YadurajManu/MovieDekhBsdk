@@ -30,7 +30,7 @@ struct HeroMovieCard: View {
                 
                 // Content
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(movie.title)
+                    Text(movie.displayName)
                         .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 40))
                         .foregroundColor(.white)
                         .lineLimit(2)

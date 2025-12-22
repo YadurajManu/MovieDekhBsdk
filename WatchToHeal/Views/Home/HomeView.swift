@@ -11,8 +11,10 @@ struct HomeView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = HomeViewModel()
     @State private var selectedMovie: Movie?
+    @State private var selectedSeries: Movie?
     @State private var selectedCategory: MovieCategory?
     @State private var showRecommendations = false
+    @State private var showProfile = false
     
     var body: some View {
         NavigationView {
@@ -41,309 +43,38 @@ struct HomeView: View {
                         }
                     }
                 } else {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            
-                            // Hero Carousel (Trending)
-                            if !viewModel.tradingMovies.isEmpty {
-                                TabView {
-                                    ForEach(viewModel.tradingMovies.prefix(5)) { movie in
-                                        Button(action: {
-                                            selectedMovie = movie
-                                        }) {
-                                            HeroMovieCard(movie: movie, onDetailsTap: {
-                                                selectedMovie = movie
-                                            })
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-                                .frame(height: 480)
-                                .ignoresSafeArea(edges: .top)
-                            }
-                            
-                            VStack(spacing: 32) {
-                                
-                                // Personalized Recommendations Section
-                                if !viewModel.personalizedRecommendations.isEmpty {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        HStack(alignment: .bottom) {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text("PERSONALIZED")
-                                                    .font(.system(size: 11, weight: .black))
-                                                    .tracking(1.5)
-                                                    .foregroundColor(.appPrimary)
-                                                
-                                                Text("For You")
-                                                    .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 32))
-                                                    .foregroundColor(.appText)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Button(action: { showRecommendations = true }) {
-                                                Text("See All")
-                                                    .font(.system(size: 14, weight: .bold))
-                                                    .foregroundColor(.appPrimary)
-                                            }
-                                        }
-                                        .padding(.horizontal, 24)
-                                        
-                                        ScrollView(.horizontal, showsIndicators: false) {
-                                            HStack(spacing: 16) {
-                                                ForEach(viewModel.personalizedRecommendations.prefix(10)) { movie in
-                                                    Button(action: { selectedMovie = movie }) {
-                                                        MovieCardView(movie: movie)
-                                                            .frame(width: 150, height: 260)
-                                                    }
-                                                    .buttonStyle(PlainButtonStyle())
-                                                }
-                                            }
-                                            .padding(.horizontal, 24)
-                                        }
-                                    }
-                                    .padding(.top, 16)
-                                }
-                                
-                                // Now Playing
-                                if !viewModel.nowPlaying.isEmpty {
-                                    MovieSectionView(title: "New Releases", movies: viewModel.nowPlaying) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .nowPlaying
-                                    }
-                                }
-                                
-                                // Director Sections
-                                ForEach(viewModel.famousDirectors.prefix(3), id: \.id) { director in
-                                    if let detail = viewModel.directorDetails[director.id],
-                                       let movies = viewModel.directorMovies[director.id],
-                                       !movies.isEmpty {
-                                        DirectorSectionView(
-                                            directorId: director.id,
-                                            directorName: detail.name,
-                                            directorPhotoURL: URL(string: "https://image.tmdb.org/t/p/w185\(detail.profilePath ?? "")"),
-                                            movies: movies,
-                                            onMovieTap: { movie in
-                                                selectedMovie = movie
-                                            }
-                                        )
-                                    }
-                                }
-                                
-                                // Action Movies
-                                if !viewModel.actionMovies.isEmpty {
-                                    MovieSectionView(title: "Action Packed", movies: viewModel.actionMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .action
-                                    }
-                                }
-                                
-                                // Crime & Mystery
-                                if !viewModel.crimeMovies.isEmpty || !viewModel.mysteryMovies.isEmpty {
-                                    MovieSectionView(title: "Crime & Mystery", movies: viewModel.crimeMovies + viewModel.mysteryMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .crime
-                                    }
-                                }
-                                
-                                // Adventure
-                                if !viewModel.adventureMovies.isEmpty {
-                                    MovieSectionView(title: "Adventure & Quest", movies: viewModel.adventureMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .adventure
-                                    }
-                                }
-                                
-                                // Horror Movies
-                                if !viewModel.horrorMovies.isEmpty {
-                                    MovieSectionView(title: "Horror & Suspense", movies: viewModel.horrorMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .horror
-                                    }
-                                }
-                                
-                                // Sci-Fi Movies
-                                if !viewModel.sciFiMovies.isEmpty {
-                                    MovieSectionView(title: "Sci-Fi & Fantasy", movies: viewModel.sciFiMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .sciFi
-                                    }
-                                }
-                                
-                                // Thriller Movies
-                                if !viewModel.thrillerMovies.isEmpty {
-                                    MovieSectionView(title: "Thrillers", movies: viewModel.thrillerMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .thriller
-                                    }
-                                }
-                                
-                                // Comedy Movies
-                                if !viewModel.comedyMovies.isEmpty {
-                                    MovieSectionView(title: "Comedy Hits", movies: viewModel.comedyMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .comedy
-                                    }
-                                }
-                                
-                                // Romance Movies
-                                if !viewModel.romanceMovies.isEmpty {
-                                    MovieSectionView(title: "Romance & Love Stories", movies: viewModel.romanceMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .romance
-                                    }
-                                }
-                                
-                                // Animation Movies
-                                if !viewModel.animationMovies.isEmpty {
-                                    MovieSectionView(title: "Animated Favorites", movies: viewModel.animationMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .animation
-                                    }
-                                }
-                                
-                                // Upcoming
-                                if !viewModel.upcoming.isEmpty {
-                                    MovieSectionView(title: "Coming Soon", movies: viewModel.upcoming) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .upcoming
-                                    }
-                                }
-                                
-                                // Top Rated
-                                if !viewModel.topRated.isEmpty {
-                                    MovieSectionView(title: "Critically Acclaimed", movies: viewModel.topRated) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .topRated
-                                    }
-                                }
-                                
-                                // Drama Movies
-                                if !viewModel.dramaMovies.isEmpty {
-                                    MovieSectionView(title: "Dramatic Stories", movies: viewModel.dramaMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .drama
-                                    }
-                                }
-                                
-                                // War & History
-                                if !viewModel.warMovies.isEmpty {
-                                    MovieSectionView(title: "War & History", movies: viewModel.warMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .war
-                                    }
-                                }
-                                
-                                // WORLD CINEMA SECTIONS
-                                Group {
-                                    if !viewModel.japaneseMasterpieces.isEmpty {
-                                        MovieSectionView(title: "🇯🇵 Japanese Masterpieces", movies: viewModel.japaneseMasterpieces) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .japaneseMasterpieces
-                                        }
-                                    }
-                                    
-                                    if !viewModel.koreanMasterpieces.isEmpty {
-                                        MovieSectionView(title: "🇰🇷 Korean Thrillers & Dramas", movies: viewModel.koreanMasterpieces) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .koreanMasterpieces
-                                        }
-                                    }
-                                    
-                                    if !viewModel.frenchMasterpieces.isEmpty {
-                                        MovieSectionView(title: "🇫🇷 French Cinema", movies: viewModel.frenchMasterpieces) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .frenchCinema
-                                        }
-                                    }
-                                    
-                                    if !viewModel.indianMasterpieces.isEmpty {
-                                        MovieSectionView(title: "🇮🇳 Indian Classics", movies: viewModel.indianMasterpieces) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .indianClassics
-                                        }
-                                    }
-                                }
-                                
-                                // STREAMING SERVICES
-                                Group {
-                                    if !viewModel.netflixMovies.isEmpty {
-                                        MovieSectionView(title: "New on Netflix", movies: viewModel.netflixMovies) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .netflix
-                                        }
-                                    }
-                                    
-                                    if !viewModel.disneyMovies.isEmpty {
-                                        MovieSectionView(title: "New on Disney+", movies: viewModel.disneyMovies) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .disney
-                                        }
-                                    }
-                                    
-                                    if !viewModel.amazonMovies.isEmpty {
-                                        MovieSectionView(title: "New on Amazon Prime", movies: viewModel.amazonMovies) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .amazon
-                                        }
-                                    }
-                                    
-                                    if !viewModel.appleTVMovies.isEmpty {
-                                        MovieSectionView(title: "New on Apple TV+", movies: viewModel.appleTVMovies) { movie in
-                                            selectedMovie = movie
-                                        } onSeeAllTap: {
-                                            selectedCategory = .appleTV
-                                        }
-                                    }
-                                }
-                                
-                                // Documentary Movies
-                                if !viewModel.documentaryMovies.isEmpty {
-                                    MovieSectionView(title: "Documentaries", movies: viewModel.documentaryMovies) { movie in
-                                        selectedMovie = movie
-                                    } onSeeAllTap: {
-                                        selectedCategory = .documentary
-                                    }
+                    ZStack(alignment: .top) {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                if viewModel.selectedSegment == .movies {
+                                    movieContent
+                                } else {
+                                    seriesContent
                                 }
                             }
-                            .padding(.vertical, 24)
-                            .padding(.bottom, 120) // Increased padding for bottom tab bar
                         }
-                    }
-                    .ignoresSafeArea(edges: .top) // Keep top hero effect
-                    .refreshable {
-                        await viewModel.loadAllMovies(region: appViewModel.userProfile?.preferredRegion ?? "US")
+                        .ignoresSafeArea(edges: .top)
+                        .refreshable {
+                            await viewModel.loadAllMovies(region: appViewModel.userProfile?.preferredRegion ?? "US")
+                        }
+                        
+                        // Custom Header Removed
                     }
                 }
+
             }
         }
         .fullScreenCover(item: $selectedMovie) { movie in
             MovieDetailView(movieId: movie.id)
         }
+        .fullScreenCover(item: $selectedSeries) { series in
+            SeriesDetailView(seriesId: series.id)
+        }
         .fullScreenCover(item: $selectedCategory) { category in
             CategoryView(category: category)
+        }
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
         }
         .fullScreenCover(isPresented: $showRecommendations) {
             RecommendationsView(viewModel: viewModel)
@@ -352,6 +83,211 @@ struct HomeView: View {
         .task {
             await viewModel.loadAllMovies(region: appViewModel.userProfile?.preferredRegion ?? "US")
         }
+    }
+    
+    @ViewBuilder
+    private var tabSwitcher: some View {
+        HStack(spacing: 0) {
+            ForEach(HomeSegment.allCases, id: \.self) { segment in
+                Button(action: {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        viewModel.selectedSegment = segment
+                    }
+                }) {
+                    Text(segment.rawValue.uppercased())
+                        .font(.system(size: 11, weight: .black)) // Reduced size
+                        .kerning(1.2)
+                        .foregroundColor(viewModel.selectedSegment == segment ? .black : .white.opacity(0.7))
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(
+                            Capsule()
+                                .fill(viewModel.selectedSegment == segment ? Color.appPrimary : Color.clear)
+                        )
+                }
+            }
+        }
+        .padding(3)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+                .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
+        )
+        .padding(.top, -30) // Overlap the Hero Card
+        .padding(.bottom, 10)
+    }
+
+    @ViewBuilder
+    private var movieContent: some View {
+        VStack(spacing: 0) { // Changed to 0 to manage spacing manually
+            // Hero Section (Trending Movies)
+            if let heroMovie = viewModel.tradingMovies.first {
+                HeroMovieCard(movie: heroMovie) {
+                    selectedMovie = heroMovie
+                }
+                .padding(.top, -20)
+            }
+            
+            // Tab Switcher
+            tabSwitcher
+            
+            VStack(spacing: 32) { // Inner VStack for lists
+                // Personalized Recommendations
+                if !viewModel.personalizedRecommendations.isEmpty {
+                    MovieSectionView(title: "Recommended for You", movies: viewModel.personalizedRecommendations) { movie in
+                        selectedMovie = movie
+                    } onSeeAllTap: {
+                        showRecommendations = true
+                    }
+                }
+                
+                // Now Playing
+                MovieSectionView(title: "Now Playing in Theaters", movies: viewModel.nowPlaying) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .nowPlaying
+                }
+                
+                // Trending
+                MovieSectionView(title: "Trending Movies", movies: viewModel.tradingMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .trending
+                }
+                
+                // Directors Spotlights
+                ForEach(viewModel.famousDirectors.prefix(2), id: \.id) { director in
+                    if let movies = viewModel.directorMovies[director.id], !movies.isEmpty {
+                        MovieSectionView(title: "Director Spotlight: \(director.name)", movies: movies) { movie in
+                            selectedMovie = movie
+                        } onSeeAllTap: {}
+                    }
+                }
+                
+                 // Action Movies
+                MovieSectionView(title: "Adrenaline Rush", movies: viewModel.actionMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {}
+                
+                // Comedy Movies
+                MovieSectionView(title: "Laughter Therapy", movies: viewModel.comedyMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {}
+                
+                // Netflix
+                MovieSectionView(title: "Popular on Netflix", movies: viewModel.netflixMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {}
+
+                // Disney+
+                MovieSectionView(title: "Disney+ Favorites", movies: viewModel.disneyMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {}
+            }
+            .padding(.top, 10)
+        }
+        .padding(.bottom, 100)
+    }
+    
+    @ViewBuilder
+    private var seriesContent: some View {
+        VStack(spacing: 0) { // Zero spacing for Hero overlap
+            // Hero Section (Trending TV)
+            if let heroSeries = viewModel.tradingSeries.first {
+                HeroMovieCard(movie: heroSeries) {
+                    selectedSeries = heroSeries
+                }
+                .padding(.top, -20)
+            }
+            
+            // Tab Switcher
+            tabSwitcher
+            
+            VStack(spacing: 32) {
+                // Trending Series
+                MovieSectionView(title: "Popular TV Shows", movies: viewModel.tradingSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .popularSeries
+                }
+                
+                // Top Rated Series
+                MovieSectionView(title: "Critically Acclaimed", movies: viewModel.topRatedSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .topRatedSeries
+                }
+                
+                // Netflix Series
+                MovieSectionView(title: "Netflix Originals", movies: viewModel.netflixSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .netflixSeries
+                }
+                
+                // Disney+ Series
+                MovieSectionView(title: "Disney+ Originals", movies: viewModel.disneySeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .disneySeries
+                }
+                
+                // Amazon Series
+                MovieSectionView(title: "Amazon Prime Video", movies: viewModel.amazonSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .amazonSeries
+                }
+                
+                // Apple TV+ Series
+                MovieSectionView(title: "Apple TV+ Originals", movies: viewModel.appleTVSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .appleTVSeries
+                }
+                
+                // Action & Adventure Series
+                MovieSectionView(title: "Action & Adventure TV", movies: viewModel.actionSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .actionSeries
+                }
+                
+                // Drama Series
+                MovieSectionView(title: "Compelling Dramas", movies: viewModel.dramaSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .dramaSeries
+                }
+                
+                // Sci-Fi Series
+                MovieSectionView(title: "Sci-Fi & Fantasy", movies: viewModel.sciFiSeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .sciFiSeries
+                }
+                
+                // Mystery Series
+                MovieSectionView(title: "Mystery & Suspense", movies: viewModel.mysterySeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .mysterySeries
+                }
+                
+                // Comedy Series
+                MovieSectionView(title: "Comedy Series", movies: viewModel.comedySeries) { series in
+                    selectedSeries = series
+                } onSeeAllTap: {
+                    selectedCategory = .comedySeries
+                }
+            }
+            .padding(.top, 10)
+        }
+        .padding(.bottom, 100)
     }
 }
 

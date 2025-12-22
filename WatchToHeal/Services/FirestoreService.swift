@@ -39,10 +39,10 @@ class FirestoreService {
         // Save comprehensive data needed for list visibility
         var movieData: [String: Any] = [
             "id": movie.id,
-            "title": movie.title,
+            "title": movie.displayName,
             "posterPath": movie.posterPath ?? "",
             "overview": movie.overview,
-            "releaseDate": movie.releaseDate,
+            "releaseDate": movie.displayDate,
             "voteAverage": movie.voteAverage,
             "addedAt": Timestamp()
         ]
@@ -223,9 +223,9 @@ class FirestoreService {
             let docRef = ref.document("\(movie.id)")
             let data: [String: Any] = [
                 "id": movie.id,
-                "title": movie.title,
+                "title": movie.displayName,
                 "posterPath": movie.posterPath ?? "",
-                "releaseDate": movie.releaseDate ?? "",
+                "releaseDate": movie.displayDate,
                 "rank": index
             ]
             batch.setData(data, forDocument: docRef)

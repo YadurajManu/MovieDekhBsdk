@@ -39,7 +39,6 @@ class HistoryManager: ObservableObject {
     
     func addToHistory(movie: MovieDetail) {
         guard let uid = AuthenticationService.shared.user?.uid else { return }
-        
         // Optimistic update
         let newMovie = WatchedMovie(
             id: movie.id,

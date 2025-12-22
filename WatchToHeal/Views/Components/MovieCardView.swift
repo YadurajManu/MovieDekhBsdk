@@ -38,7 +38,7 @@ struct MovieCardView: View {
             // Movie Info
             VStack(alignment: .leading, spacing: 4) {
                 // Title
-                Text(movie.title)
+                Text(movie.displayName)
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.appText)
                     .lineLimit(1)

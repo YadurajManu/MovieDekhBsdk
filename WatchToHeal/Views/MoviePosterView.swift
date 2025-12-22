@@ -42,7 +42,7 @@ struct MoviePosterView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             // Movie Title
-            Text(movie.title)
+            Text(movie.displayName)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.white)
                 .lineLimit(2)

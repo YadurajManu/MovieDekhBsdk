@@ -89,7 +89,7 @@ struct WatchlistView: View {
                                     .buttonStyle(PlainButtonStyle())
                                     
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(movie.title)
+                                        Text(movie.displayName)
                                             .font(.system(size: 16, weight: .bold)) // Slightly larger title
                                             .foregroundColor(.appText)
                                             .lineLimit(2)
@@ -141,7 +141,7 @@ struct WatchlistView: View {
                 }
             }
         } message: { movie in
-            Text("Are you sure you want to remove \"\(movie.title)\" from your watchlist?")
+            Text("Are you sure you want to remove \"\(movie.displayName)\" from your watchlist?")
         }
     }
 }

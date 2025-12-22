@@ -42,6 +42,7 @@ class SearchViewModel: ObservableObject {
     enum SearchScope: String, CaseIterable, Identifiable {
         case all = "All"
         case movie = "Movies"
+        case tv = "TV Shows"
         case person = "People"
         
         var id: String { rawValue }
@@ -106,6 +107,28 @@ class SearchViewModel: ObservableObject {
                             voteAverage: movie.voteAverage,
                             voteCount: movie.voteCount,
                             originalTitle: movie.originalTitle
+                        )
+                    }
+                    searchResults = []
+                    
+                case .tv:
+                    // Use TV-only Search
+                    let movies = try await TMDBService.shared.searchTV(query: searchQuery)
+                    // Convert to SearchResult for consistent display logic
+                    multiSearchResults = movies.map { movie in
+                        SearchResult(
+                            id: movie.id,
+                            mediaType: .tv,
+                            title: nil,
+                            name: movie.displayName, // Use displayName to get name
+                            posterPath: movie.posterPath,
+                            profilePath: nil,
+                            overview: movie.overview,
+                            releaseDate: nil,
+                            firstAirDate: movie.firstAirDate,
+                            voteAverage: movie.voteAverage,
+                            voteCount: movie.voteCount,
+                            originalTitle: movie.originalName
                         )
                     }
                     searchResults = []

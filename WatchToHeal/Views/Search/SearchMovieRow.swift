@@ -23,7 +23,7 @@ struct SearchMovieRow: View {
                 // Title, Year and Original Title
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(movie.title)
+                        Text(movie.displayName)
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.appText)
                         
@@ -32,7 +32,7 @@ struct SearchMovieRow: View {
                             .foregroundColor(.appTextSecondary)
                     }
                     
-                    if let original = movie.originalTitle, original != movie.title {
+                    if let original = movie.originalTitle, original != movie.displayName {
                         Text("'\(original)'")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.appTextSecondary.opacity(0.8))
@@ -78,7 +78,7 @@ struct SearchMovieRow: View {
                 directorName = director.name
             }
         } catch {
-            print("Failed to load director for \(movie.title): \(error)")
+            print("Failed to load director for \(movie.displayName): \(error)")
         }
     }
 }

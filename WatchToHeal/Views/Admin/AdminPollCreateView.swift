@@ -254,10 +254,10 @@ struct AdminPollCreateView: View {
                     LazyVStack(spacing: 12) {
                         ForEach(searchResults, id: \.id) { movie in
                             Button(action: {
-                                options[index].text = movie.title
+                                options[index].text = movie.displayName
                                 options[index].movieId = movie.id
                                 options[index].posterPath = movie.posterPath
-                                options[index].secondaryInfo = String(movie.releaseDate.prefix(4))
+                                options[index].secondaryInfo = String(movie.displayDate.prefix(4))
                                 activeSearchIndex = nil
                                 searchText = ""
                                 searchResults = []
@@ -274,11 +274,11 @@ struct AdminPollCreateView: View {
                                     }
                                     
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(movie.title)
+                                        Text(movie.displayName)
                                             .font(.system(size: 16, weight: .bold))
                                             .foregroundColor(.white)
-                                        if !movie.releaseDate.isEmpty {
-                                            Text(movie.releaseDate.prefix(4))
+                                        if !movie.displayDate.isEmpty {
+                                            Text(movie.displayDate.prefix(4))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.gray)
                                         }

@@ -49,7 +49,7 @@ class CalendarManager: ObservableObject {
         // Parse release date
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-        guard let releaseDate = dateFormatter.date(from: movie.releaseDate) else {
+        guard let releaseDate = dateFormatter.date(from: movie.displayDate) else {
             return (false, "Invalid release date")
         }
         
@@ -57,7 +57,7 @@ class CalendarManager: ObservableObject {
         // For simplicity, we create a new one here
         
         let event = EKEvent(eventStore: eventStore)
-        event.title = "Movie Release: \(movie.title)"
+        event.title = "Movie Release: \(movie.displayName)"
         event.startDate = releaseDate
         event.endDate = releaseDate.addingTimeInterval(3600) // 1 hour duration
         event.calendar = eventStore.defaultCalendarForNewEvents

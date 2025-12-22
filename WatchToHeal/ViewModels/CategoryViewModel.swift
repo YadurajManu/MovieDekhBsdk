@@ -115,6 +115,30 @@ class CategoryViewModel: ObservableObject {
             return try await TMDBService.shared.fetchMoviesByProvider(providerId: 119, page: page)
         case .appleTV:
             return try await TMDBService.shared.fetchMoviesByProvider(providerId: 350, page: page)
+            
+        // Series Fetches
+        case .popularSeries:
+            return try await TMDBService.shared.fetchTrendingTV() // Trending might not support page in this simple method wrapper, but acceptable for now
+        case .topRatedSeries:
+            return try await TMDBService.shared.fetchTopRatedTV(page: page)
+        case .netflixSeries:
+            return try await TMDBService.shared.fetchTVByProvider(providerId: 8, page: page)
+        case .disneySeries:
+            return try await TMDBService.shared.fetchTVByProvider(providerId: 337, page: page)
+        case .amazonSeries:
+            return try await TMDBService.shared.fetchTVByProvider(providerId: 119, page: page)
+        case .appleTVSeries:
+            return try await TMDBService.shared.fetchTVByProvider(providerId: 350, page: page)
+        case .actionSeries:
+            return try await TMDBService.shared.fetchTVByGenre(genreId: 10759, page: page)
+        case .comedySeries:
+            return try await TMDBService.shared.fetchTVByGenre(genreId: 35, page: page)
+        case .dramaSeries:
+            return try await TMDBService.shared.fetchTVByGenre(genreId: 18, page: page)
+        case .sciFiSeries:
+            return try await TMDBService.shared.fetchTVByGenre(genreId: 10765, page: page)
+        case .mysterySeries:
+            return try await TMDBService.shared.fetchTVByGenre(genreId: 9648, page: page)
         }
     }
 }

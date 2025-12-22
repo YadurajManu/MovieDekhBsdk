@@ -11,6 +11,7 @@ struct SearchView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = SearchViewModel()
     @State private var selectedMovie: Movie?
+    @State private var selectedSeries: Movie?
     @State private var selectedTrailer: TMDBService.MovieTrailer?
     @State private var discoveryTab = 0 // 0: Staff Picks, 1: Collections
     @Namespace private var discoveryNamespace
@@ -301,9 +302,11 @@ struct SearchView: View {
                                     } else {
                                         return viewModel.multiSearchResults.compactMap { result in
                                             guard result.mediaType != .person else { return nil }
+                                            let isMovie = result.mediaType == .movie
                                             return Movie(
                                                 id: result.id,
-                                                title: result.displayTitle,
+                                                title: isMovie ? result.displayTitle : nil,
+                                                name: result.mediaType == .tv ? result.displayTitle : nil,
                                                 posterPath: result.posterPath,
                                                 backdropPath: nil,
                                                 overview: result.overview ?? "",
@@ -317,7 +320,13 @@ struct SearchView: View {
                                 }()
                                 
                                 ForEach(movies) { movie in
-                                    Button(action: { selectedMovie = movie }) {
+                                    Button(action: { 
+                                        if movie.title != nil {
+                                            selectedMovie = movie 
+                                        } else {
+                                            selectedSeries = movie
+                                        }
+                                    }) {
                                         SearchMovieRow(movie: movie)
                                             .padding(.horizontal, 20)
                                     }
@@ -328,7 +337,7 @@ struct SearchView: View {
                                 
                                 // People results if applicable
                                 let people = viewModel.multiSearchResults.filter { $0.mediaType == .person }
-                                if !people.isEmpty && viewModel.selectedScope != .movie {
+                                if !people.isEmpty && viewModel.selectedScope != .movie && viewModel.selectedScope != .tv {
                                     VStack(alignment: .leading, spacing: 16) {
                                         Text("PEOPLE")
                                             .font(.system(size: 14, weight: .black))
@@ -372,6 +381,9 @@ struct SearchView: View {
         }
         .fullScreenCover(item: $selectedMovie) { movie in
             MovieDetailView(movieId: movie.id)
+        }
+        .fullScreenCover(item: $selectedSeries) { series in
+            SeriesDetailView(seriesId: series.id)
         }
         .sheet(item: $selectedTrailer) { trailer in
             YouTubeView(videoID: trailer.youtubeKey)

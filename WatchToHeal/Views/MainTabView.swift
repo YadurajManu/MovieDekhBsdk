@@ -17,8 +17,6 @@ struct MainTabView: View {
                 switch selectedTab {
                 case .home:
                     HomeView()
-                case .calendar:
-                    UpcomingCalendarView()
                 case .search:
                     SearchView()
                 case .community:

@@ -56,7 +56,7 @@ struct TopMovieShareView: View {
                             .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 5)
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(movie.title)
+                                Text(movie.displayName)
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.white)
                                     .lineLimit(2)

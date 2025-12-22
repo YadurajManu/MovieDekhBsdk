@@ -87,7 +87,7 @@ class WatchlistManager: ObservableObject {
         // Schedule alert if release date is in future
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-        if let releaseDate = dateFormatter.date(from: movie.releaseDate), releaseDate > Date() {
+        if let releaseDate = dateFormatter.date(from: movie.displayDate), releaseDate > Date() {
             NotificationManager.shared.scheduleMovieReleaseAlert(for: movie, releaseDate: releaseDate)
         }
         

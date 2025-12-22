@@ -213,7 +213,7 @@ struct ProfileView: View {
                                                         }
                                                     }
                                                     
-                                                    Text(availability.movie.title)
+                                                    Text(availability.movie.displayName)
                                                         .font(.system(size: 13, weight: .bold))
                                                         .foregroundColor(.appText)
                                                         .lineLimit(1)
