@@ -12,6 +12,7 @@
 		907A28B72EEEC506003FC6F2 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28B62EEEC506003FC6F2 /* FirebaseAuth */; };
 		907A28B92EEEC506003FC6F2 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28B82EEEC506003FC6F2 /* FirebaseCore */; };
 		907A28BB2EEEC506003FC6F2 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28BA2EEEC506003FC6F2 /* FirebaseFirestore */; };
+		90C50FC82EF9B0790062B131 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 90C50FC72EF9B0790062B131 /* Lottie */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,6 +31,19 @@
 			remoteInfo = WatchToHeal;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		90C50FCE2EF9B19A0062B131 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		90F9EA892EEE0B6600A8FF23 /* WatchToHeal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchToHeal.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -56,16 +70,6 @@
 			path = WatchToHeal;
 			sourceTree = "<group>";
 		};
-		90F9EA992EEE0B6700A8FF23 /* WatchToHealTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WatchToHealTests;
-			sourceTree = "<group>";
-		};
-		90F9EAA32EEE0B6700A8FF23 /* WatchToHealUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WatchToHealUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +82,7 @@
 				907A28B92EEEC506003FC6F2 /* FirebaseCore in Frameworks */,
 				907A28BB2EEEC506003FC6F2 /* FirebaseFirestore in Frameworks */,
 				907A28B42EEEC46D003FC6F2 /* GoogleSignInSwift in Frameworks */,
+				90C50FC82EF9B0790062B131 /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,12 +103,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		90C50FCF2EF9B1CE0062B131 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		90F9EA802EEE0B6600A8FF23 = {
 			isa = PBXGroup;
 			children = (
 				90F9EA8B2EEE0B6600A8FF23 /* WatchToHeal */,
-				90F9EA992EEE0B6700A8FF23 /* WatchToHealTests */,
-				90F9EAA32EEE0B6700A8FF23 /* WatchToHealUITests */,
+				90C50FCF2EF9B1CE0062B131 /* Frameworks */,
 				90F9EA8A2EEE0B6600A8FF23 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -128,6 +139,7 @@
 				90F9EA852EEE0B6600A8FF23 /* Sources */,
 				90F9EA862EEE0B6600A8FF23 /* Frameworks */,
 				90F9EA872EEE0B6600A8FF23 /* Resources */,
+				90C50FCE2EF9B19A0062B131 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -143,6 +155,7 @@
 				907A28B62EEEC506003FC6F2 /* FirebaseAuth */,
 				907A28B82EEEC506003FC6F2 /* FirebaseCore */,
 				907A28BA2EEEC506003FC6F2 /* FirebaseFirestore */,
+				90C50FC72EF9B0790062B131 /* Lottie */,
 			);
 			productName = WatchToHeal;
 			productReference = 90F9EA892EEE0B6600A8FF23 /* WatchToHeal.app */;
@@ -160,9 +173,6 @@
 			);
 			dependencies = (
 				90F9EA982EEE0B6700A8FF23 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				90F9EA992EEE0B6700A8FF23 /* WatchToHealTests */,
 			);
 			name = WatchToHealTests;
 			packageProductDependencies = (
@@ -183,9 +193,6 @@
 			);
 			dependencies = (
 				90F9EAA22EEE0B6700A8FF23 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				90F9EAA32EEE0B6700A8FF23 /* WatchToHealUITests */,
 			);
 			name = WatchToHealUITests;
 			packageProductDependencies = (
@@ -229,6 +236,7 @@
 			packageReferences = (
 				907A28B02EEEC46D003FC6F2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				907A28B52EEEC506003FC6F2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				90C50FC62EF9B0790062B131 /* XCRemoteSwiftPackageReference "lottie-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 90F9EA8A2EEE0B6600A8FF23 /* Products */;
@@ -633,6 +641,14 @@
 				minimumVersion = 12.7.0;
 			};
 		};
+		90C50FC62EF9B0790062B131 /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -660,6 +676,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 907A28B52EEEC506003FC6F2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		90C50FC72EF9B0790062B131 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 90C50FC62EF9B0790062B131 /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

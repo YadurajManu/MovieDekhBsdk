@@ -18,6 +18,36 @@ struct MovieSocialStats: Codable {
     var bakwasPercentage: Double {
         totalVotes == 0 ? 0 : (Double(ratingCounts["bakwas"] ?? 0) / Double(totalVotes)) * 100
     }
+    
+    // Consensus Meter Logic
+    var consensusScore: Double {
+        guard totalVotes > 0 else { return 0 }
+        let absolute = Double(ratingCounts["absolute"] ?? 0)
+        let awaara = Double(ratingCounts["awaara"] ?? 0)
+        // bakwas is 0 weight
+        return (absolute + (awaara * 0.5)) / Double(totalVotes)
+    }
+    
+    var approvalRating: Int {
+        Int(consensusScore * 100)
+    }
+    
+    var consensusLabel: String {
+        guard totalVotes > 0 else { return "NOT RATED" }
+        let score = consensusScore
+        if score >= 0.85 { return "MUST WATCH" }
+        if score >= 0.70 { return "SOLID PICK" }
+        if score >= 0.50 { return "MIXED BAGS" }
+        if score >= 0.30 { return "SKIP IT" }
+        return "AVOID IT"
+    }
+    
+    var consensusColor: String {
+        let score = consensusScore
+        if score >= 0.70 { return "appPrimary" }
+        if score >= 0.40 { return "orange" }
+        return "red"
+    }
 }
 
 struct MovieReview: Codable, Identifiable {

@@ -5,6 +5,7 @@ struct CreateCommunityListView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = CommunityListsViewModel()
     @State private var showMoviePicker = false
+    @State private var showCelebration = false
     
     var body: some View {
         ZStack {
@@ -158,6 +159,14 @@ struct CreateCommunityListView: View {
                     .tint(.appPrimary)
                     .foregroundColor(.white)
             }
+            
+            if showCelebration {
+                LottieView(name: "congratulation") {
+                    // Animation finished
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
         }
         .sheet(isPresented: $showMoviePicker) {
             MoviePickerView(
@@ -226,6 +235,9 @@ struct CreateCommunityListView: View {
         Task {
             let success = await viewModel.createList(ownerId: profile.id, ownerName: profile.name)
             if success {
+                withAnimation { showCelebration = true }
+                // Delay dismissal to show confetti
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
                 dismiss()
             }
         }

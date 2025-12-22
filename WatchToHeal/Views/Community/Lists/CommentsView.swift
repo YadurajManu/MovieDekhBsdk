@@ -7,6 +7,7 @@ struct CommentsView: View {
     @State private var commentText: String = ""
     @State private var comments: [Comment] = []
     @State private var isLoading = false
+    @State private var showCelebration = false
     
     var body: some View {
         NavigationStack {
@@ -14,29 +15,39 @@ struct CommentsView: View {
                 Color.appBackground.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    if isLoading {
-                        ProgressView().tint(.appPrimary).frame(maxHeight: .infinity)
-                    } else if comments.isEmpty {
-                        VStack(spacing: 16) {
-                            Image(systemName: "bubble.left.and.bubble.right")
-                                .font(.system(size: 50))
-                                .foregroundColor(.white.opacity(0.1))
-                            Text("No comments yet.\nStart the conversation!")
-                                .font(.system(size: 14))
-                                .foregroundColor(.appTextSecondary.opacity(0.6))
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxHeight: .infinity)
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 24) {
-                                ForEach(comments) { comment in
-                                    CommentRow(comment: comment) {
-                                        deleteComment(comment)
+                    ZStack {
+                        if isLoading {
+                            ProgressView().tint(.appPrimary).frame(maxHeight: .infinity)
+                        } else if comments.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "bubble.left.and.bubble.right")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.white.opacity(0.1))
+                                Text("No comments yet.\nStart the conversation!")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.appTextSecondary.opacity(0.6))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                LazyVStack(spacing: 24) {
+                                    ForEach(comments) { comment in
+                                        CommentRow(comment: comment) {
+                                            deleteComment(comment)
+                                        }
                                     }
                                 }
+                                .padding(24)
                             }
-                            .padding(24)
+                        }
+                        
+                        if showCelebration {
+                            LottieView(name: "congratulation") {
+                                withAnimation { showCelebration = false }
+                            }
+                            .ignoresSafeArea()
+                            .allowsHitTesting(false)
                         }
                     }
                     
@@ -112,6 +123,7 @@ struct CommentsView: View {
         commentText = ""
         withAnimation {
             comments.insert(newComment, at: 0)
+            showCelebration = true
         }
         
         Task {
