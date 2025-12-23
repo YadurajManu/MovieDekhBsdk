@@ -138,4 +138,15 @@ class HistoryManager: ObservableObject {
         
         return components.prefix(2).joined(separator: " ")
     }
+    
+    func clearHistory() {
+        DispatchQueue.main.async {
+            self.watchedMovies.removeAll()
+            self.totalMinutesWatched = 0
+            self.favoriteGenre = "None"
+            self.moviesWatchedCount = 0
+            self.timeOfDayStats = ["Morning": 0, "Afternoon": 0, "Evening": 0, "Night": 0]
+            self.genreDistribution = [:]
+        }
+    }
 }

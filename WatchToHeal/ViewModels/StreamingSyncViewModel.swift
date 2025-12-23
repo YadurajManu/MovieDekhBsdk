@@ -38,7 +38,7 @@ class StreamingSyncViewModel: ObservableObject {
                     }
                 }
             } catch {
-                print("❌ Error checking availability for \(movie.title): \(error)")
+                print("❌ Error checking availability for \(movie.displayName): \(error)")
             }
         }
         

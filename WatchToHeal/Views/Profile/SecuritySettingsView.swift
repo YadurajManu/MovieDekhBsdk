@@ -3,6 +3,8 @@ import FirebaseAuth
 
 struct SecuritySettingsView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @State private var showingDeleteAlert = false
+    @State private var showingErrorAlert = false
     @State private var showingResetAlert = false
     @State private var alertMessage = ""
     
@@ -65,7 +67,7 @@ struct SecuritySettingsView: View {
                             .padding(.leading, 8)
                         
                         GlassCard {
-                            Button(action: { /* Handle account deletion */ }) {
+                            Button(action: { showingDeleteAlert = true }) {
                                 HStack {
                                     Image(systemName: "person.fill.xmark")
                                         .foregroundColor(.red)
@@ -88,6 +90,19 @@ struct SecuritySettingsView: View {
         } message: {
             Text(alertMessage)
         }
+        .alert("Delete Account?", isPresented: $showingDeleteAlert) {
+            Button("Delete", role: .destructive) {
+                deleteAccount()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This action is permanent and cannot be undone. All your ratings, watchlist, and profile data will be purged.")
+        }
+        .alert("Error", isPresented: $showingErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
     }
     
     private func resetPassword() {
@@ -103,7 +118,24 @@ struct SecuritySettingsView: View {
             } catch {
                 await MainActor.run {
                     alertMessage = error.localizedDescription
-                    showingResetAlert = true
+                    showingErrorAlert = true
+                }
+            }
+        }
+    }
+    
+    private func deleteAccount() {
+        Task {
+            do {
+                try await appViewModel.deleteAccount()
+            } catch {
+                await MainActor.run {
+                    if let err = error as NSError?, err.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                        alertMessage = "For security, you must sign in again before deleting your account."
+                    } else {
+                        alertMessage = error.localizedDescription
+                    }
+                    showingErrorAlert = true
                 }
             }
         }

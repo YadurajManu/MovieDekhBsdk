@@ -168,6 +168,14 @@ class FirestoreService {
         return !doc.exists
     }
     
+    func checkUsernameAvailability(username: String) async throws -> Bool {
+        let cleanUsername = username.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanUsername.isEmpty else { return false }
+        
+        let doc = try await db.collection("usernames").document(cleanUsername).getDocument()
+        return !doc.exists
+    }
+    
     func setUsername(userId: String, username: String) async throws {
         let usernameLower = username.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let batch = db.batch()
@@ -501,16 +509,41 @@ class FirestoreService {
             transaction.updateData(["commentCount": FieldValue.increment(Int64(1))], forDocument: listRef)
             return nil
         }
+        
+        // Log Activity
+        Task {
+            let activity = UserActivity(
+                userId: comment.userId,
+                type: .comment,
+                movieId: 0, // List comments don't have a movieId directly
+                movieTitle: "Community List", 
+                moviePoster: nil,
+                content: comment.text
+            )
+            try? await self.logActivity(userId: comment.userId, activity: activity)
+        }
     }
     
     func deleteComment(listId: String, commentId: String) async throws {
         let listRef = db.collection("communityLists").document(listId)
         let commentRef = listRef.collection("comments").document(commentId)
         
-        try await db.runTransaction { (transaction, _) -> Any? in
+        // Fetch comment first to get userId and content for activity removal
+        let commentDoc = try await commentRef.getDocument()
+        guard let comment = Comment(dictionary: commentDoc.data() ?? [:]) else { return }
+        let userId = comment.userId
+        let contentSnippet = String(comment.text.prefix(20))
+        
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
             transaction.updateData(["commentCount": FieldValue.increment(Int64(-1))], forDocument: listRef)
             transaction.deleteDocument(commentRef)
             return nil
+        }
+        
+        // Remove activity and decrement stats
+        Task {
+            try? await self.removeActivity(userId: userId, type: .comment, movieId: 0, content: contentSnippet)
+            try? await self.decrementUserStats(userId: userId, activityType: .comment)
         }
     }
     
@@ -586,7 +619,6 @@ class FirestoreService {
             }
             
             // 2. Check if user already reviewed
-            let reviewRef = socialRef.collection("reviews").document(user.id)
             let existingDoc = try? transaction.getDocument(reviewRef)
             
             if existingDoc != nil && existingDoc!.exists {
@@ -654,7 +686,7 @@ class FirestoreService {
         let socialRef = db.collection("movieSocial").document("\(movieId)")
         let reviewRef = socialRef.collection("reviews").document(userId)
         
-        _ = try await db.runTransaction { (transaction, _) -> Any? in
+        let deletedRating: String? = try await db.runTransaction { (transaction, _) -> Any? in
             let reviewDoc: DocumentSnapshot
             do {
                 reviewDoc = try transaction.getDocument(reviewRef)
@@ -681,7 +713,14 @@ class FirestoreService {
             // 3. Delete review
             transaction.deleteDocument(reviewRef)
             
-            return nil
+            return review.rating
+        } as? String
+        
+        if let rating = deletedRating {
+            Task {
+                try? await self.removeActivity(userId: userId, type: .rating, movieId: movieId)
+                try? await self.decrementUserStats(userId: userId, activityType: .rating, rating: rating)
+            }
         }
     }
     
@@ -732,9 +771,9 @@ class FirestoreService {
             return nil
         }
         
-        // Log Activity (OUTSIDE transaction)
-        if isLiking {
-            Task {
+        // Log/Remove Activity (OUTSIDE transaction)
+        Task {
+            if isLiking {
                 let activity = UserActivity(
                     userId: userId,
                     type: .like,
@@ -743,6 +782,9 @@ class FirestoreService {
                     moviePoster: moviePoster
                 )
                 try? await self.logActivity(userId: userId, activity: activity)
+            } else {
+                try? await self.removeActivity(userId: userId, type: .like, movieId: movieId)
+                try? await self.decrementUserStats(userId: userId, activityType: .like)
             }
         }
     }
@@ -806,10 +848,22 @@ class FirestoreService {
             .document(reviewId)
         let replyRef = reviewRef.collection("replies").document(replyId)
         
+        // Fetch reply first to get userId and content for activity removal
+        let replyDoc = try await replyRef.getDocument()
+        guard let reply = try? replyDoc.data(as: MovieReply.self) else { return }
+        let userId = reply.userId
+        let contentSnippet = String(reply.content.prefix(20))
+        
         _ = try await db.runTransaction { (transaction, _) -> Any? in
             transaction.updateData(["repliesCount": FieldValue.increment(Int64(-1))], forDocument: reviewRef)
             transaction.deleteDocument(replyRef)
             return nil
+        }
+        
+        // Remove activity and decrement stats
+        Task {
+            try? await self.removeActivity(userId: userId, type: .reply, movieId: movieId, content: contentSnippet)
+            try? await self.decrementUserStats(userId: userId, activityType: .reply)
         }
     }
     
@@ -986,6 +1040,35 @@ class FirestoreService {
                 try? await self.updateUserStats(userId: userId, activityType: .like)
             }
         }
+        
+        // 6. Query all COMMENTS on community lists
+        let commentsSnapshot = try await db.collectionGroup("comments")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments()
+            
+        for doc in commentsSnapshot.documents {
+            // Check if activity already exists
+            let existing = try await db.collection("users").document(userId).collection("activities")
+                .whereField("type", isEqualTo: ActivityType.comment.rawValue)
+                .whereField("timestamp", isEqualTo: doc.get("timestamp") ?? Date())
+                .getDocuments()
+            
+            if existing.isEmpty {
+                if let comment = try? doc.data(as: Comment.self) {
+                    let activity = UserActivity(
+                        userId: userId,
+                        type: .comment,
+                        movieId: 0,
+                        movieTitle: "Community List",
+                        moviePoster: nil,
+                        content: comment.text,
+                        timestamp: comment.createdAt
+                    )
+                    try db.collection("users").document(userId).collection("activities").addDocument(from: activity)
+                    try? await self.updateUserStats(userId: userId, activityType: .comment)
+                }
+            }
+        }
     }
     
     private func updateUserStats(userId: String, activityType: ActivityType, rating: String? = nil) async throws {
@@ -1041,6 +1124,113 @@ class FirestoreService {
             return nil
         }
     }
+    
+    private func decrementUserStats(userId: String, activityType: ActivityType, rating: String? = nil) async throws {
+        let statsRef = db.collection("users").document(userId).collection("stats").document("main")
+        
+        _ = try await db.runTransaction { (transaction, _) -> Any? in
+            let statsDoc: DocumentSnapshot
+            do {
+                statsDoc = try transaction.getDocument(statsRef)
+            } catch {
+                return nil
+            }
+            
+            var stats = (try? statsDoc.data(as: UserStats.self)) ?? UserStats()
+            
+            // Update counters
+            switch activityType {
+            case .rating:
+                stats.totalRatings = max(0, stats.totalRatings - 1)
+                if let r = rating {
+                    stats.ratingBreakdown[r] = max(0, (stats.ratingBreakdown[r] ?? 1) - 1)
+                }
+            case .comment:
+                stats.totalComments = max(0, stats.totalComments - 1)
+            case .reply:
+                stats.totalReplies = max(0, stats.totalReplies - 1)
+            case .like:
+                stats.totalLikes = max(0, stats.totalLikes - 1)
+            }
+            
+            let statsData = try! Firestore.Encoder().encode(stats)
+            transaction.setData(statsData, forDocument: statsRef, merge: true)
+            return nil
+        }
+    }
+    
+    private func removeActivity(userId: String, type: ActivityType, movieId: Int? = nil, content: String? = nil) async throws {
+        var query = db.collection("users").document(userId).collection("activities")
+            .whereField("type", isEqualTo: type.rawValue)
+        
+        if let movieId = movieId {
+            query = query.whereField("movieId", isEqualTo: movieId)
+        }
+        
+        // If content is provided, we use it to disambiguate (especially for comments/replies)
+        // Since Firestore doesn't support 'contains' on fields for deletion easily without full match,
+        // we'll fetch and filter if multiple matches found, or just take the most recent one.
+        
+        let snapshot = try await query.getDocuments()
+        
+        for doc in snapshot.documents {
+            let activity = try? doc.data(as: UserActivity.self)
+            
+            var shouldDelete = true
+            if let content = content, let activityContent = activity?.content {
+                // If content is specified, it must match or be contained
+                shouldDelete = activityContent.contains(content) || content.contains(activityContent)
+            }
+            
+            if shouldDelete {
+                try await doc.reference.delete()
+                // If we only want to delete one (the most relevant), we could break here
+                // For reviews, there's only one. for comments/replies, we'll delete the matching one.
+                break 
+            }
+        }
+    }
+    
+    func purgeUserData(userId: String) async throws {
+        let userRef = db.collection("users").document(userId)
+        
+        // 1. Delete Subcollections
+        let subcollections = ["watchlist", "history", "activities", "stats", "topFavorites", "onboarding"]
+        for sub in subcollections {
+            let snapshot = try await userRef.collection(sub).getDocuments()
+            for doc in snapshot.documents {
+                try await doc.reference.delete()
+            }
+        }
+        
+        // 2. Delete Community Lists owned by user
+        let listSnapshot = try await db.collection("communityLists")
+            .whereField("ownerId", isEqualTo: userId)
+            .getDocuments()
+        for doc in listSnapshot.documents {
+            try await doc.reference.delete()
+        }
+        
+        // 3. Delete Friendships
+        let friendsSnapshot = try await db.collection("friendships")
+            .whereField("userIds", arrayContains: userId)
+            .getDocuments()
+        for doc in friendsSnapshot.documents {
+            try await doc.reference.delete()
+        }
+        
+        // 4. Delete the User Document itself
+        try await userRef.delete()
+        
+        // 5. Cleanup usernames (optional but recommended for name recycling)
+        let usernameSnapshot = try await db.collection("usernames")
+            .whereField("uid", isEqualTo: userId)
+            .getDocuments()
+        for doc in usernameSnapshot.documents {
+            try await doc.reference.delete()
+        }
+    }
+    
     // MARK: - Movie Nudges (Direct Recommendations)
     
     func sendRecommendation(sender: UserProfile, recipientId: String, movieId: Int, movieTitle: String, moviePoster: String?, note: String) async throws {

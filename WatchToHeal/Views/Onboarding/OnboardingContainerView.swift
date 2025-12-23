@@ -28,7 +28,7 @@ struct OnboardingContainerView: View {
                             }
                         }
                         
-                        if viewModel.currentStep == .personalDetails {
+                        if viewModel.currentStep == .recognition {
                             Spacer()
                             Button(action: {
                                 appViewModel.signOut()
@@ -59,9 +59,6 @@ struct OnboardingContainerView: View {
                 
                 // Steps
                 TabView(selection: $viewModel.currentStep) {
-                    NameAgeInputView(viewModel: viewModel)
-                        .tag(OnboardingStep.personalDetails)
-                    
                     RecognitionStepView(viewModel: viewModel)
                         .tag(OnboardingStep.recognition)
                     

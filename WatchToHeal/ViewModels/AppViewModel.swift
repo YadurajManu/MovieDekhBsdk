@@ -94,6 +94,20 @@ class AppViewModel: ObservableObject {
         UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
     }
     
+    func deleteAccount() async throws {
+        try await AuthenticationService.shared.deleteAccount()
+        await MainActor.run {
+            // Clear local caches
+            WatchlistManager.shared.clearWatchlist()
+            HistoryManager.shared.clearHistory()
+            
+            self.userProfile = nil
+            self.isAuthenticated = false
+            self.hasCompletedOnboarding = false
+            UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+        }
+    }
+    
     // MARK: - Admin Flow
     func adminLogin() {
         // Create a mock super-admin profile

@@ -86,7 +86,7 @@ class HomeViewModel: ObservableObject {
         errorMessage = nil
         
         // Fetch all movie categories concurrently (including recommendations)
-        async let recommendationsTask = loadPersonalizedRecommendations()
+        async let recommendationsTask: Void = loadPersonalizedRecommendations()
         async let trendingTask = TMDBService.shared.fetchTrending()
         async let nowPlayingTask = TMDBService.shared.fetchNowPlaying(region: region)
         async let upcomingTask = TMDBService.shared.fetchUpcoming(region: region)

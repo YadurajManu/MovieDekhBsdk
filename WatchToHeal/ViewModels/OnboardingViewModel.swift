@@ -1,11 +1,38 @@
-import SwiftUI
-import Combine
 import FirebaseFirestore
 import FirebaseAuth
+import Combine
+import SwiftUI
+
+enum CinematicPersona: String, CaseIterable {
+    case archivist = "The Archivist"
+    case surrealist = "The Surrealist"
+    case neoNoirist = "The Neo-Noirist"
+    case minimalist = "The Minimalist"
+    case aestheticist = "The Aestheticist"
+    
+    var description: String {
+        switch self {
+        case .archivist: return "Collector of histories and deep cuts."
+        case .surrealist: return "Dreamer of abstract frames and non-linear paths."
+        case .neoNoirist: return "Seeker of shadows, grit, and moral ambiguity."
+        case .minimalist: return "Believer that less is significantly more."
+        case .aestheticist: return "Devotee of color palettes and visual poetry."
+        }
+    }
+    
+    var suggestions: [String] {
+        switch self {
+        case .archivist: return ["Chronicaling cinema one frame at a time.", "Deep cuts only. No trailers.", "Building a library of light and shadow."]
+        case .surrealist: return ["Finding truth in the abstract.", "Dreams projected at 24fps.", "Escaping reality through the lens."]
+        case .neoNoirist: return ["Walking the rainy streets of celluloid.", "Justice is a shadow. Truth is a mystery.", "Gritty frames and neon nights."]
+        case .minimalist: return ["The beauty of the blank space.", "Essential cinema only.", "Finding the core of the story."]
+        case .aestheticist: return ["Chasing the perfect palette.", "Cinematography is my love language.", "Living in a Wes Anderson frame."]
+        }
+    }
+}
 
 enum OnboardingStep: Int, CaseIterable {
-    case personalDetails = 0
-    case recognition
+    case recognition = 0
     case polarity
     case context
     case actors
@@ -25,7 +52,7 @@ enum OnboardingSentiment: String, Codable {
 }
 
 class OnboardingViewModel: ObservableObject {
-    @Published var currentStep: OnboardingStep = .personalDetails
+    @Published var currentStep: OnboardingStep = .recognition
     @Published var progress: Double = 0.0
     
     // Data Sources for steps
@@ -60,19 +87,13 @@ class OnboardingViewModel: ObservableObject {
     
     @Published var isLoading = false
 
-    @Published var name: String = ""
-    @Published var age: String = ""
+    private var usernameCheckTask: Task<Void, Never>?
     
     // Step 3 Sentiments
     @Published var movieSentiments: [Int: OnboardingSentiment] = [:]
     
     // Taste Profile
     @Published var isNicheLeaning: Bool = false
-    
-    var isStep1Valid: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !age.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
     
     var isStep3Valid: Bool {
         movieSentiments.values.contains { $0 != .unseen }
@@ -108,7 +129,7 @@ class OnboardingViewModel: ObservableObject {
     }
     
     init() {
-        self.progress = 0.1
+        self.progress = 1.0 / Double(OnboardingStep.allCases.count)
     }
     
     func moveToNextStep() {
@@ -317,8 +338,6 @@ class OnboardingViewModel: ObservableObject {
         guard let user = AuthenticationService.shared.user else { return }
         
         let data: [String: Any] = [
-            "name": name,
-            "age": age,
             "recognitionIds": Array(selectedRecognitionIds),
             "likedMovies": Array(likedMovies),
             "dislikedMovies": Array(dislikedMovies),

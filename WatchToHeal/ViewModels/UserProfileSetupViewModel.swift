@@ -11,6 +11,13 @@ class UserProfileSetupViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var setupComplete = false
     
+    @Published var selectedPersona: CinematicPersona? {
+        didSet {
+            updateBioSuggestions()
+        }
+    }
+    @Published var bioSuggestions: [String] = []
+    
     private var checkTask: Task<Void, Never>?
     
     func checkUsername() {
@@ -50,14 +57,30 @@ class UserProfileSetupViewModel: ObservableObject {
         
         do {
             try await FirestoreService.shared.setUsername(userId: userId, username: username)
+            
+            var profileData: [String: Any] = [:]
             if !bio.isEmpty {
-                try await FirestoreService.shared.updateUserProfile(userId: userId, data: ["bio": bio])
+                profileData["bio"] = bio
             }
+            if let persona = selectedPersona {
+                profileData["persona"] = persona.rawValue
+            }
+            
+            if !profileData.isEmpty {
+                try await FirestoreService.shared.updateUserProfile(userId: userId, data: profileData)
+            }
+            
             setupComplete = true
         } catch {
             errorMessage = "Failed to save profile. Please try again."
         }
         
         isSaving = false
+    }
+    
+    private func updateBioSuggestions() {
+        if let persona = selectedPersona {
+            bioSuggestions = persona.suggestions
+        }
     }
 }

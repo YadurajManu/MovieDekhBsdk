@@ -134,4 +134,9 @@ class WatchlistManager: ObservableObject {
             watchlistMovies = decoded
         }
     }
+    
+    func clearWatchlist() {
+        watchlistMovies.removeAll()
+        UserDefaults.standard.removeObject(forKey: watchlistKey)
+    }
 }

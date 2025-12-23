@@ -90,7 +90,7 @@ struct AdminDashboardView: View {
     
     private func tabButton(icon: String, label: String, index: Int) -> some View {
         Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 selectedTab = index
             }
         }) {
@@ -193,7 +193,7 @@ struct AdminPollsListView: View {
     
     private func filterPill(label: String, count: Int, index: Int) -> some View {
         Button(action: { 
-            withAnimation(.spring()) {
+            _ = withAnimation(.spring()) {
                 selectedFilter = index 
             }
         }) {
@@ -570,7 +570,7 @@ struct AdminListsView: View {
     
     private func subTabButton(title: String, index: Int) -> some View {
         Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 selectedSubTab = index
             }
         }) {
@@ -764,7 +764,7 @@ struct AdminStaffPickMoviesView: View {
                     .foregroundColor(.appTextSecondary)
                 TextField("Search movies to feature...", text: $searchText)
                     .foregroundColor(.appText)
-                    .onChange(of: searchText) { _ in
+                    .onChange(of: searchText) { oldValue, newValue in
                         searchMovies()
                     }
                 

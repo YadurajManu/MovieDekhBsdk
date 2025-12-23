@@ -105,17 +105,17 @@ struct StatsDashboard: View {
                 
                 ZStack {
                     Circle()
-                        .stroke(Color.appPrimary.opacity(0.1), lineWidth: 4)
-                        .frame(width: 50, height: 50)
+                        .stroke(Color.appPrimary.opacity(0.1), lineWidth: 3)
+                        .frame(width: 40, height: 40)
                     
                     Text("\(stats.currentStreak)")
-                        .font(.system(size: 18, weight: .black))
+                        .font(.system(size: 16, weight: .black))
                         .foregroundColor(.appPrimary)
                 }
             }
-            .padding(20)
+            .padding(16)
             .background(Color.white.opacity(0.03))
-            .cornerRadius(24)
+            .cornerRadius(16)
             .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.05), lineWidth: 1))
             
             // Stats Grid
@@ -146,19 +146,19 @@ struct StatCard: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 24, weight: .black))
+                    .font(.system(size: 20, weight: .black))
                     .foregroundColor(.appText)
                 Text(title)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 8, weight: .bold))
                     .foregroundColor(.appText.opacity(0.4))
                     .kerning(1)
             }
         }
-        .padding(16)
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.03))
-        .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.05), lineWidth: 1))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.05), lineWidth: 1))
     }
 }
 
@@ -218,45 +218,45 @@ struct ActivityRow: View {
                 } placeholder: {
                     Color.white.opacity(0.05)
                 }
-                .frame(width: 50, height: 75)
-                .cornerRadius(8)
+                .frame(width: 40, height: 60)
+                .cornerRadius(6)
             } else {
                 Color.white.opacity(0.05)
-                    .frame(width: 50, height: 75)
-                    .cornerRadius(8)
+                    .frame(width: 40, height: 60)
+                    .cornerRadius(6)
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     ActivityIcon(type: activity.type)
                     Text(activity.movieTitle)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.appText)
                         .lineLimit(1)
                     Spacer()
                     Text(activity.timestamp.timeAgoDisplay())
-                        .font(.system(size: 10))
+                        .font(.system(size: 9))
                         .foregroundColor(.white.opacity(0.3))
                 }
                 
                 if let content = activity.content, !content.isEmpty {
                     Text(content)
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(2)
                 } else if let rating = activity.rating {
                     RatingBadge(rating: rating)
                 } else if activity.type == .like {
                     Text("Liked a review")
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.6))
                 }
             }
         }
-        .padding(12)
+        .padding(8)
         .background(Color.white.opacity(0.02))
-        .cornerRadius(16)
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.04), lineWidth: 1))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.04), lineWidth: 1))
     }
 }
 

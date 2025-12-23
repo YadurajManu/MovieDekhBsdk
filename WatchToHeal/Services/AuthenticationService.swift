@@ -15,7 +15,7 @@ class AuthenticationService: ObservableObject {
     }
     
     func listenToAuthState() {
-        Auth.auth().addStateDidChangeListener { auth, user in
+        _ = Auth.auth().addStateDidChangeListener { auth, user in
             self.user = user
         }
     }
@@ -56,5 +56,15 @@ class AuthenticationService: ObservableObject {
                                                        accessToken: user.accessToken.tokenString)
         
         return try await Auth.auth().signIn(with: credential)
+    }
+    
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else { return }
+        
+        // 1. Purge Firestore Data first
+        try await FirestoreService.shared.purgeUserData(userId: user.uid)
+        
+        // 2. Delete Auth User
+        try await user.delete()
     }
 }

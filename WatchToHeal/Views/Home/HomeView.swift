@@ -159,34 +159,133 @@ struct HomeView: View {
                     selectedCategory = .trending
                 }
                 
-                // Directors Spotlights
+                // Directors Spotlights (No See All - all movies are visible)
                 ForEach(viewModel.famousDirectors.prefix(2), id: \.id) { director in
                     if let movies = viewModel.directorMovies[director.id], !movies.isEmpty {
                         MovieSectionView(title: "Director Spotlight: \(director.name)", movies: movies) { movie in
                             selectedMovie = movie
-                        } onSeeAllTap: {}
+                        }
                     }
                 }
                 
-                 // Action Movies
+                // Action Movies
                 MovieSectionView(title: "Adrenaline Rush", movies: viewModel.actionMovies) { movie in
                     selectedMovie = movie
-                } onSeeAllTap: {}
+                } onSeeAllTap: {
+                    selectedCategory = .action
+                }
                 
                 // Comedy Movies
                 MovieSectionView(title: "Laughter Therapy", movies: viewModel.comedyMovies) { movie in
                     selectedMovie = movie
-                } onSeeAllTap: {}
+                } onSeeAllTap: {
+                    selectedCategory = .comedy
+                }
+                
+                // Drama Movies
+                MovieSectionView(title: "Dramatic Stories", movies: viewModel.dramaMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .drama
+                }
+                
+                // Sci-Fi Movies
+                MovieSectionView(title: "Sci-Fi & Fantasy", movies: viewModel.sciFiMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .sciFi
+                }
+                
+                // Horror Movies
+                MovieSectionView(title: "Horror & Suspense", movies: viewModel.horrorMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .horror
+                }
+                
+                // Thriller Movies
+                MovieSectionView(title: "Edge of Your Seat", movies: viewModel.thrillerMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .thriller
+                }
+                
+                // Romance Movies
+                MovieSectionView(title: "Romance & Love Stories", movies: viewModel.romanceMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .romance
+                }
+                
+                // Animation Movies
+                MovieSectionView(title: "Animated Favorites", movies: viewModel.animationMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .animation
+                }
+                
+                // Documentary Movies
+                MovieSectionView(title: "Documentaries", movies: viewModel.documentaryMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .documentary
+                }
+                
+                // Crime Movies
+                MovieSectionView(title: "Crime & Mystery", movies: viewModel.crimeMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .crime
+                }
+                
+                // Adventure Movies
+                MovieSectionView(title: "Adventure & Quest", movies: viewModel.adventureMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .adventure
+                }
+                
+                // Korean Masterpieces
+                MovieSectionView(title: "Korean Masterpieces", movies: viewModel.koreanMasterpieces) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .koreanMasterpieces
+                }
+                
+                // Japanese Masterpieces
+                MovieSectionView(title: "Japanese Masterpieces", movies: viewModel.japaneseMasterpieces) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .japaneseMasterpieces
+                }
                 
                 // Netflix
                 MovieSectionView(title: "Popular on Netflix", movies: viewModel.netflixMovies) { movie in
                     selectedMovie = movie
-                } onSeeAllTap: {}
+                } onSeeAllTap: {
+                    selectedCategory = .netflix
+                }
 
                 // Disney+
                 MovieSectionView(title: "Disney+ Favorites", movies: viewModel.disneyMovies) { movie in
                     selectedMovie = movie
-                } onSeeAllTap: {}
+                } onSeeAllTap: {
+                    selectedCategory = .disney
+                }
+                
+                // Amazon Prime
+                MovieSectionView(title: "Amazon Prime Video", movies: viewModel.amazonMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .amazon
+                }
+                
+                // Apple TV+
+                MovieSectionView(title: "Apple TV+ Originals", movies: viewModel.appleTVMovies) { movie in
+                    selectedMovie = movie
+                } onSeeAllTap: {
+                    selectedCategory = .appleTV
+                }
             }
             .padding(.top, 10)
         }

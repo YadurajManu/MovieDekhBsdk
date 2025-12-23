@@ -34,7 +34,7 @@ class NotificationManager: NSObject, ObservableObject {
         
         let content = UNMutableNotificationContent()
         content.title = "Watchlist Reminder"
-        content.body = "Don't forget to watch \"\(movie.title)\" today! It's waiting for you to heal."
+        content.body = "Don't forget to watch \"\(movie.displayName)\" today! It's waiting for you to heal."
         content.sound = .default
         
         // Simple 24h reminder for now, or based on release date if available and in future
@@ -57,7 +57,7 @@ class NotificationManager: NSObject, ObservableObject {
         
         let content = UNMutableNotificationContent()
         content.title = "New Release Alert! 🍿"
-        content.body = "\"\(movie.title)\" is now available! Dive in and enjoy."
+        content.body = "\"\(movie.displayName)\" is now available! Dive in and enjoy."
         content.sound = .default
         
         let request = UNNotificationRequest(identifier: "release_\(movie.id)", content: content, trigger: trigger)

@@ -303,7 +303,7 @@ struct SeriesDetailView: View {
                 
                 // Fixed Back Button Overlay
                 GlassBackButton(action: { dismiss() })
-                    .padding(.top, geometry.safeAreaInsets.top - 12)
+                    .padding(.top, 16)
                     .padding(.leading, 16)
                 
                 // Toast Overlay

@@ -11,7 +11,7 @@ struct MovieSectionView: View {
     let title: String
     let movies: [Movie]
     let onMovieTap: (Movie) -> Void
-    let onSeeAllTap: () -> Void
+    var onSeeAllTap: (() -> Void)? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
@@ -22,12 +22,14 @@ struct MovieSectionView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    onSeeAllTap()
-                }) {
-                    Text("See All")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.appTextSecondary)
+                if let seeAllAction = onSeeAllTap {
+                    Button(action: {
+                        seeAllAction()
+                    }) {
+                        Text("See All")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.appTextSecondary)
+                    }
                 }
             }
             .padding(.horizontal, 20)
