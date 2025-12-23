@@ -237,7 +237,7 @@ class SearchViewModel: ObservableObject {
         // Fetch latest trailers (TMDB)
         Task {
             do {
-                let fetchedTrailers = try await TMDBService.shared.fetchLatestTrailers()
+                let fetchedTrailers = try await TMDBService.shared.fetchLatestTrailers(region: region)
                 self.latestTrailers = fetchedTrailers
                 print("✅ Trailers: \(fetchedTrailers.count)")
             } catch {

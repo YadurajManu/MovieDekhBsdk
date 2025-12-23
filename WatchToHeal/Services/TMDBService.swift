@@ -568,30 +568,82 @@ class TMDBService {
         }
     }
     
-    func fetchLatestTrailers() async throws -> [MovieTrailer] {
-        // 1. Fetch upcoming movies
-        let upcoming = try await fetchUpcoming()
-        let moviesToFetch = Array(upcoming.prefix(6)) // Limit to 6 for performance
+    func fetchLatestTrailers(region: String = "US") async throws -> [MovieTrailer] {
+        // 1. Fetch a wider range of movies to find the "latest dropped" trailers
+        // We pull more candidates because a less popular movie might have just dropped a fresh trailer
+        async let upcomingTask = fetchUpcoming(region: region)
+        async let nowPlayingTask = fetchNowPlaying(region: region)
         
-        var trailers: [MovieTrailer] = []
+        let (upcoming, nowPlaying) = try await (upcomingTask, nowPlayingTask)
         
-        // 2. Fetch videos for each movie
-        for movie in moviesToFetch {
-            do {
-                let detail = try await fetchMovieDetail(id: movie.id)
-                if let trailer = detail.youtubeTrailers.first {
-                    trailers.append(MovieTrailer(
-                        id: movie.id,
-                        movieTitle: movie.displayName,
-                        backdropPath: movie.backdropPath ?? movie.posterPath,
-                        youtubeKey: trailer.key
-                    ))
+        // Combine and dedup
+        var allMovies = upcoming + nowPlaying
+        allMovies = Array(NSOrderedSet(array: allMovies).array as! [Movie])
+        
+        // Take a larger pool to check for new layouts (e.g. top 25)
+        // We don't sort by popularity here because we want to see if ANY of these have a new trailer
+        let moviesToFetch = Array(allMovies.prefix(25))
+        
+        // Thread-safe container
+        struct TrailerCandidate: @unchecked Sendable {
+            let trailer: MovieTrailer
+            let publishedDate: Date
+        }
+        
+        var candidates: [TrailerCandidate] = []
+        
+        // 2. Parallel fetch of details
+        await withTaskGroup(of: [TrailerCandidate].self) { group in
+            for movie in moviesToFetch {
+                group.addTask {
+                    do {
+                        let detail = try await self.fetchMovieDetail(id: movie.id)
+                        
+                        // Look for Trailers AND Teasers
+                        let validVideos = detail.videos?.results.filter { $0.site == "YouTube" && ($0.type == "Trailer" || $0.type == "Teaser") } ?? []
+                        
+                        // We map ALL valid videos from this movie, not just the single newest one
+                        // This allows "Teaser 2" and "Trailer 1" to both potentially compete if they are recent
+                        // But usually for UI we only want 1 card per movie.
+                        // So let's pick the SINGLE newest video for this movie.
+                        
+                        if let newestVideo = validVideos.sorted(by: { ($0.publishedDate ?? Date.distantPast) > ($1.publishedDate ?? Date.distantPast) }).first,
+                           let pubDate = newestVideo.publishedDate {
+                            
+                            return [TrailerCandidate(
+                                trailer: MovieTrailer(
+                                    id: movie.id,
+                                    movieTitle: movie.displayName,
+                                    backdropPath: movie.backdropPath ?? movie.posterPath,
+                                    youtubeKey: newestVideo.key
+                                ),
+                                publishedDate: pubDate
+                            )]
+                        }
+                    } catch {
+                        print("Error fetching video for \(movie.id): \(error)")
+                    }
+                    return []
                 }
-            } catch {
-                print("Error fetching trailer for \(movie.displayName): \(error)")
+            }
+            
+            for await result in group {
+                candidates.append(contentsOf: result)
             }
         }
         
-        return trailers
+        // 3. Sort ALL candidates by date (Global sort)
+        // This ensures the absolute latest trailer dropped (e.g. 1 hour ago) is first, regardless of movie popularity
+        let sorted = candidates.sorted { $0.publishedDate > $1.publishedDate }
+        
+        // Return top 10
+        return sorted.prefix(10).map { $0.trailer }
+    }
+}
+
+// Add popularity helper to Movie since we sort by it
+extension Movie {
+    var popularity: Double {
+        return voteCount > 0 ? Double(voteCount) * voteAverage : 0
     }
 }

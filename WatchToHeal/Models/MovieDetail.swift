@@ -147,6 +147,7 @@ struct Video: Codable, Identifiable {
     let name: String
     let site: String
     let type: String
+    let publishedAt: String?
     
     var thumbnailURL: URL? {
         URL(string: "https://img.youtube.com/vi/\(key)/hqdefault.jpg")
@@ -154,6 +155,27 @@ struct Video: Codable, Identifiable {
     
     var youtubeURL: URL? {
         URL(string: "https://www.youtube.com/watch?v=\(key)")
+    }
+    
+    var publishedDate: Date? {
+        guard let dateString = publishedAt else { return nil }
+        
+        // Try with fractional seconds first (common in TMDB videos)
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractionalFormatter.date(from: dateString) {
+            return date
+        }
+        
+        // Fallback to standard ISO8601
+        let standardFormatter = ISO8601DateFormatter()
+        standardFormatter.formatOptions = [.withInternetDateTime]
+        return standardFormatter.date(from: dateString)
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, key, name, site, type
+        case publishedAt = "published_at"
     }
 }
 
