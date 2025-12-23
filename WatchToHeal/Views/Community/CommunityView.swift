@@ -8,12 +8,14 @@ struct CommunityView: View {
     @State private var selectedList: CommunityList?
     @State private var showSetup = false
     @State private var showCreateList = false
+    @State private var showCreatePoll = false
+    @State private var showCreateQuestion = false
     @State private var communityScope: CommunityScope = .members
     
     enum CommunityScope: String, CaseIterable {
-        case members = "Members"
-        case lists = "Curated Lists"
-        case pulse = "Global Pulse"
+        case members = "People"
+        case lists = "Editorial"
+        case pulse = "Pulse"
     }
     
     var body: some View {
@@ -36,7 +38,7 @@ struct CommunityView: View {
                                 .font(.system(size: 11, weight: .black))
                                 .tracking(2)
                                 .foregroundColor(.appPrimary)
-                            Text(communityScope == .members ? "Film Buffs" : "Cinematic Lists")
+                            Text(communityScope == .members ? "Film Buffs" : (communityScope == .lists ? "Editorial" : "Pulse"))
                                 .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 40))
                                 .foregroundColor(.appText)
                         }
@@ -44,6 +46,21 @@ struct CommunityView: View {
                         
                         if communityScope == .lists {
                             Button(action: { showCreateList = true }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .frame(width: 44, height: 44)
+                                    .background(Circle().fill(Color.appPrimary))
+                            }
+                        } else if communityScope == .pulse {
+                            Menu {
+                                Button(action: { showCreatePoll = true }) {
+                                    Label("Create Poll", systemImage: "chart.bar.fill")
+                                }
+                                Button(action: { showCreateQuestion = true }) {
+                                    Label("Start Debate", systemImage: "sparkles")
+                                }
+                            } label: {
                                 Image(systemName: "plus")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.black)
@@ -86,7 +103,7 @@ struct CommunityView: View {
                     } else if communityScope == .lists {
                         communityListsContent
                     } else {
-                        GlobalPollsView()
+                        PulseView()
                     }
                 }
             }
@@ -109,6 +126,12 @@ struct CommunityView: View {
             }
             .fullScreenCover(isPresented: $showCreateList) {
                 CreateCommunityListView()
+            }
+            .fullScreenCover(isPresented: $showCreatePoll) {
+                CreatePollView()
+            }
+            .fullScreenCover(isPresented: $showCreateQuestion) {
+                CreateQuestionView()
             }
         }
     }

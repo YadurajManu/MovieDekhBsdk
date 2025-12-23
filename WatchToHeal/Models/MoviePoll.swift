@@ -33,6 +33,16 @@ struct MoviePoll: Codable, Identifiable {
     var isFinalized: Bool
     let type: PollType
     
+    // Creator Info
+    var creatorId: String? // nil for Official/Admin polls
+    var creatorName: String?
+    var creatorUsername: String?
+    var creatorPhotoURL: String?
+    
+    // Social Features
+    var likedUserIds: [String] = []
+    var category: String? // e.g., "Battle", "Versus", "Recommendation"
+    
     var totalVotes: Int {
         votes.reduce(0, +)
     }
@@ -51,6 +61,12 @@ struct MoviePoll: Codable, Identifiable {
         case expiresAt
         case isFinalized
         case type
+        case creatorId
+        case creatorName
+        case creatorUsername
+        case creatorPhotoURL
+        case likedUserIds
+        case category
         case globalMovieId
         case globalMovieTitle
     }

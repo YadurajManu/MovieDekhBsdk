@@ -1277,6 +1277,31 @@ class FirestoreService {
         _ = try db.collection("polls").addDocument(from: poll)
     }
     
+    func togglePollLike(pollId: String, userId: String) async throws {
+        let pollRef = db.collection("polls").document(pollId)
+        
+        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let pollDocument: DocumentSnapshot
+            do {
+                pollDocument = try transaction.getDocument(pollRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            guard var poll = try? pollDocument.data(as: MoviePoll.self) else { return nil }
+            
+            if poll.likedUserIds.contains(userId) {
+                poll.likedUserIds.removeAll { $0 == userId }
+            } else {
+                poll.likedUserIds.append(userId)
+            }
+            
+            transaction.updateData(["likedUserIds": poll.likedUserIds], forDocument: pollRef)
+            return nil
+        })
+    }
+    
     func fetchAllPollsAdmin() async throws -> [MoviePoll] {
         let snapshot = try await db.collection("polls")
             .order(by: "createdAt", descending: true)
@@ -1381,6 +1406,81 @@ class FirestoreService {
     
     func banUser(userId: String, isBanned: Bool) async throws {
         try await db.collection("users").document(userId).updateData(["isBanned": isBanned])
+    }
+    
+    // MARK: - Cine-Debate (Q&A)
+    func createQuestion(question: CommunityQuestion) async throws {
+        _ = try db.collection("communityQuestions").addDocument(from: question)
+    }
+    
+    func deleteQuestion(questionId: String) async throws {
+        try await db.collection("communityQuestions").document(questionId).delete()
+    }
+    
+    func toggleQuestionLike(questionId: String, userId: String) async throws {
+        let docRef = db.collection("communityQuestions").document(questionId)
+        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            guard let snapshot = try? transaction.getDocument(docRef),
+                  var question = try? snapshot.data(as: CommunityQuestion.self) else { return nil }
+            
+            if question.likedUserIds.contains(userId) {
+                question.likedUserIds.removeAll { $0 == userId }
+                question.likeCount = max(0, question.likeCount - 1)
+            } else {
+                question.likedUserIds.append(userId)
+                question.likeCount += 1
+            }
+            
+            transaction.updateData([
+                "likedUserIds": question.likedUserIds,
+                "likeCount": question.likeCount
+            ], forDocument: docRef)
+            return nil
+        })
+    }
+    
+    func addReply(questionId: String, reply: CommunityReply) async throws {
+        let questionRef = db.collection("communityQuestions").document(questionId)
+        let replyRef = questionRef.collection("replies").document()
+        
+        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            transaction.setData(try! Firestore.Encoder().encode(reply), forDocument: replyRef)
+            transaction.updateData(["replyCount": FieldValue.increment(Int64(1))], forDocument: questionRef)
+            return nil
+        })
+    }
+    
+    func deleteReply(questionId: String, replyId: String) async throws {
+        let questionRef = db.collection("communityQuestions").document(questionId)
+        let replyRef = questionRef.collection("replies").document(replyId)
+        
+        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            transaction.deleteDocument(replyRef)
+            transaction.updateData(["replyCount": FieldValue.increment(Int64(-1))], forDocument: questionRef)
+            return nil
+        })
+    }
+    
+    func toggleReplyLike(questionId: String, replyId: String, userId: String) async throws {
+        let docRef = db.collection("communityQuestions").document(questionId).collection("replies").document(replyId)
+        _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            guard let snapshot = try? transaction.getDocument(docRef),
+                  var reply = try? snapshot.data(as: CommunityReply.self) else { return nil }
+            
+            if reply.likedUserIds.contains(userId) {
+                reply.likedUserIds.removeAll { $0 == userId }
+                reply.likeCount = max(0, reply.likeCount - 1)
+            } else {
+                reply.likedUserIds.append(userId)
+                reply.likeCount += 1
+            }
+            
+            transaction.updateData([
+                "likedUserIds": reply.likedUserIds,
+                "likeCount": reply.likeCount
+            ], forDocument: docRef)
+            return nil
+        })
     }
     
     // MARK: - Platform Analytics
