@@ -317,15 +317,10 @@ struct DetailedMovieListRow: View {
                     .foregroundColor(.appText)
                     .lineLimit(1)
                 
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Text(movie.year)
                     Text("•")
-                    HStack(spacing: 2) {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.appPrimary)
-                            .font(.system(size: 12))
-                        Text(String(format: "%.1f", movie.voteAverage))
-                    }
+                    PremiumRatingBadge(rating: movie.voteAverage, size: .small)
                 }
                 .font(.system(size: 13))
                 .foregroundColor(.appTextSecondary)

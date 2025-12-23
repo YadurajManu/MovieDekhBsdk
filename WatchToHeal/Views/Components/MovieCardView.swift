@@ -46,15 +46,7 @@ struct MovieCardView: View {
                 
                 // Rating and Year
                 HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.appPrimary)
-                        
-                        Text(movie.rating)
-                            .font(.system(size: 13, weight: .black))
-                            .foregroundColor(.appText)
-                    }
+                    PremiumRatingBadge(rating: movie.voteAverage, size: .small)
                     
                     Text(movie.year)
                         .font(.system(size: 13, weight: .medium))

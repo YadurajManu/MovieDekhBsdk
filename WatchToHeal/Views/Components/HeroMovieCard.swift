@@ -40,9 +40,7 @@ struct HeroMovieCard: View {
                     HStack(spacing: 8) {
                         Text(movie.year)
                         Text("•")
-                        Text(String(format: "%.1f", movie.voteAverage))
-                            .foregroundColor(.appPrimary)
-                            .bold()
+                        PremiumRatingBadge(rating: movie.voteAverage, size: .small)
                     }
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))

@@ -70,17 +70,7 @@ struct SeriesDetailView: View {
                                         
                                         HStack(spacing: 12) {
                                             // Primary Rating Badge
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "star.fill")
-                                                    .font(.system(size: 12, weight: .bold))
-                                                Text(series.rating)
-                                                    .font(.system(size: 14, weight: .black))
-                                            }
-                                            .padding(.vertical, 6)
-                                            .padding(.horizontal, 12)
-                                            .background(Color.appPrimary)
-                                            .foregroundColor(.black)
-                                            .cornerRadius(8)
+                                            PremiumRatingBadge(rating: series.voteAverage, size: .medium)
                                             
                                             // Subtle Secondary Metadata
                                             HStack(spacing: 8) {
