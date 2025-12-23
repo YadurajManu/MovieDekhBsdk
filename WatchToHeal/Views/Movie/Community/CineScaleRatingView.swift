@@ -19,33 +19,33 @@ struct CineScaleRatingView: View {
                         onRatingSelected(rating.id)
                     }
                 }) {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         Image(systemName: rating.icon)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundColor(selectedRating == rating.id ? rating.color : .white.opacity(0.4))
                         
-                        VStack(spacing: 2) {
+                        VStack(spacing: 1) {
                             Text(rating.title.uppercased())
-                                .font(.system(size: 10, weight: .black))
+                                .font(.system(size: 9, weight: .black))
                                 .foregroundColor(selectedRating == rating.id ? rating.color : .white)
                             
                             Text(rating.subtitle)
-                                .font(.system(size: 8, weight: .bold))
+                                .font(.system(size: 7, weight: .bold))
                                 .foregroundColor(.white.opacity(0.3))
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(selectedRating == rating.id ? rating.color.opacity(0.15) : Color.white.opacity(0.04))
+                            .fill(selectedRating == rating.id ? rating.color.opacity(0.12) : Color.white.opacity(0.03))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedRating == rating.id ? rating.color.opacity(0.5) : Color.white.opacity(0.05), lineWidth: 1)
+                            .stroke(selectedRating == rating.id ? rating.color.opacity(0.4) : Color.white.opacity(0.04), lineWidth: 1)
                     )
                 }
-                .scaleEffect(selectedRating == rating.id ? 1.05 : 1.0)
+                .scaleEffect(selectedRating == rating.id ? 1.03 : 1.0)
             }
         }
     }

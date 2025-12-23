@@ -80,99 +80,95 @@ struct ReviewRow: View {
     @State private var isRevealed = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header: User Info + Rating Badge
+            HStack(spacing: 12) {
                 if let photoURL = review.userPhoto, let url = URL(string: photoURL) {
                     CachedAsyncImage(url: url) { image in
                         image.resizable().scaledToFill()
                     } placeholder: {
                         Circle().fill(Color.appCardBackground)
                     }
-                    .frame(width: 28, height: 28)
+                    .frame(width: 32, height: 32)
                     .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 0.5))
                 } else {
                     Image(systemName: "person.circle.fill")
                         .resizable()
-                        .frame(width: 28, height: 28)
-                        .foregroundColor(.appTextSecondary.opacity(0.3))
+                        .frame(width: 32, height: 32)
+                        .foregroundColor(.appTextSecondary.opacity(0.2))
                 }
                 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(review.username)
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.appText)
                     Text(review.timestamp, style: .relative)
-                        .font(.system(size: 9))
-                        .foregroundColor(.appTextSecondary)
+                        .font(.system(size: 10))
+                        .foregroundColor(.appTextSecondary.opacity(0.6))
                 }
                 
                 Spacer()
                 
-                HStack(spacing: 6) {
-                    if review.isSpoiler {
-                        Text("SPOILER")
-                            .font(.system(size: 7, weight: .black))
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(3)
-                    }
-                    
-                    let color = colorForRating(review.rating)
-                    Text(labelForRating(review.rating))
-                        .font(.system(size: 8, weight: .black))
-                        .foregroundColor(color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(color.opacity(0.1))
-                        .cornerRadius(4)
-                }
+                // Rating Badge
+                let color = colorForRating(review.rating)
+                Text(labelForRating(review.rating))
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundColor(color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(color.opacity(0.12))
+                    .cornerRadius(6)
             }
             
-            ZStack {
+            // Content with Spoiler handling
+            ZStack(alignment: .leading) {
                 Text(review.content)
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundColor(.appTextSecondary)
-                    .lineSpacing(3)
-                    .blur(radius: (review.isSpoiler && !isRevealed) ? 10 : 0)
+                    .lineSpacing(4)
+                    .blur(radius: (review.isSpoiler && !isRevealed) ? 12 : 0)
                 
                 if review.isSpoiler && !isRevealed {
-                    Button(action: { withAnimation { isRevealed = true } }) {
-                        Text("TAP TO REVEAL")
-                            .font(.system(size: 9, weight: .black))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.5))
-                            .cornerRadius(16)
+                    Button(action: { withAnimation(.spring()) { isRevealed = true } }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "eye.slash.fill")
+                            Text("SPOILER CONTENT")
+                        }
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(20)
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
             
+            // Tags
             if !review.genreTags.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(review.genreTags, id: \.self) { tag in
-                            Text(tag)
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.appPrimary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(Color.appPrimary.opacity(0.1))
-                                .cornerRadius(6)
-                        }
+                HStack(spacing: 6) {
+                    ForEach(review.genreTags, id: \.self) { tag in
+                        Text(tag.uppercased())
+                            .font(.system(size: 7, weight: .black))
+                            .foregroundColor(.appPrimary.opacity(0.8))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.appPrimary.opacity(0.08))
+                            .cornerRadius(4)
                     }
                 }
-                .blur(radius: (review.isSpoiler && !isRevealed) ? 6 : 0)
+                .blur(radius: (review.isSpoiler && !isRevealed) ? 8 : 0)
             }
         }
-        .padding(12)
-        .background(Color.white.opacity(0.03))
-        .cornerRadius(14)
+        .padding(16)
+        .background(Color.white.opacity(0.025))
+        .cornerRadius(16)
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(review.isSpoiler ? Color.red.opacity(0.2) : Color.white.opacity(0.05), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(review.isSpoiler ? Color.red.opacity(0.15) : Color.white.opacity(0.03), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .contextMenu {

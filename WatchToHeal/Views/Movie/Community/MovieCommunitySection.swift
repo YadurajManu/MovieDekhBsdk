@@ -26,33 +26,41 @@ struct MovieCommunitySection: View {
         ZStack {
             VStack(spacing: 24) {
                 // Header
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("YOUR TAKE")
-                            .font(.system(size: 14, weight: .black))
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("COMMUNITY PULSE")
+                            .font(.system(size: 10, weight: .black))
                             .kerning(2)
                             .foregroundColor(.appPrimary)
-                        Text("Share your reaction with the community")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white.opacity(0.3))
+                        Text("What's your take?")
+                            .font(.system(size: 22, weight: .black))
+                            .foregroundColor(.appText)
                     }
                     Spacer()
                 }
+                .padding(.horizontal, 4)
                 
                 if showSuccessMessage {
                     HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: "sparkles")
                             .foregroundColor(.appPrimary)
-                            .font(.system(size: 14))
-                        Text("CONSENSUS UPDATED")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("FEEDBACK LOGGED")
                             .font(.system(size: 10, weight: .black))
                             .foregroundColor(.appPrimary)
+                            .kerning(1)
                     }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 16)
-                    .background(Color.appPrimary.opacity(0.1))
-                    .cornerRadius(12)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 20)
+                    .background(
+                        Capsule()
+                            .fill(Color.appPrimary.opacity(0.1))
+                            .overlay(Capsule().stroke(Color.appPrimary.opacity(0.2), lineWidth: 1))
+                    )
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity
+                    ))
                 }
                 
                 if viewModel.isLoading && viewModel.stats.totalVotes == 0 {
@@ -204,7 +212,10 @@ struct MovieCommunitySection: View {
             }
         }
         .padding(16)
-        .background(Color.white.opacity(0.02))
-        .cornerRadius(20)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white.opacity(0.03))
+                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.06), lineWidth: 1))
+        )
     }
 }

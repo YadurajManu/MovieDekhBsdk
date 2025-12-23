@@ -8,6 +8,7 @@ struct ListDetailView: View {
     @State private var showComments = false
     @State private var isLiked: Bool = false
     @State private var internalLikeCount: Int = 0
+    @State private var triggerLikeAnimation = false
     @State private var ownerProfile: UserProfile?
     
     init(list: CommunityList) {
@@ -141,8 +142,22 @@ struct ListDetailView: View {
                                 // Like Button
                                 Button(action: { toggleLike() }) {
                                     HStack(spacing: 6) {
-                                        Image(systemName: isLiked ? "heart.fill" : "heart")
-                                            .foregroundColor(isLiked ? .red : .white)
+                                        ZStack {
+                                            if isLiked {
+                                                LottieView(
+                                                    name: "like",
+                                                    playTrigger: triggerLikeAnimation,
+                                                    initialProgress: triggerLikeAnimation ? 0 : 1
+                                                )
+                                                .frame(width: 30, height: 30)
+                                                .scaleEffect(1.2)
+                                            } else {
+                                                Image(systemName: "heart")
+                                                    .foregroundColor(.white)
+                                            }
+                                        }
+                                        .frame(width: 20, height: 20)
+                                        
                                         Text("\(internalLikeCount)")
                                             .foregroundColor(.white)
                                     }
@@ -230,6 +245,11 @@ struct ListDetailView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             isLiked.toggle()
             internalLikeCount += isLiked ? 1 : -1
+            if isLiked {
+                triggerLikeAnimation = true
+            } else {
+                triggerLikeAnimation = false
+            }
         }
         
         Task {

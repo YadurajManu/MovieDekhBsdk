@@ -30,15 +30,15 @@ struct TagPicker: View {
                     }
                 }) {
                     Text(tag)
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(selectedTags.contains(tag) ? Color.appPrimary : Color.white.opacity(0.04))
-                        .foregroundColor(selectedTags.contains(tag) ? .black : .white.opacity(0.6))
-                        .cornerRadius(12)
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(selectedTags.contains(tag) ? Color.appPrimary : Color.white.opacity(0.03))
+                        .foregroundColor(selectedTags.contains(tag) ? .black : .white.opacity(0.5))
+                        .cornerRadius(8)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(selectedTags.contains(tag) ? Color.appPrimary : Color.white.opacity(0.06), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(selectedTags.contains(tag) ? Color.appPrimary : Color.white.opacity(0.04), lineWidth: 1)
                         )
                 }
             }
