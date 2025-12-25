@@ -8,6 +8,7 @@
 import SwiftUI
 import FirebaseAuth
 
+
 struct LoginView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @Environment(\.dismiss) var dismiss
@@ -15,6 +16,8 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showPassword = false
     @State private var isRememberMeChecked = true
+    @State private var showForgotPasswordAlert = false
+    @State private var resetEmail = ""
     
     var body: some View {
         ZStack {
@@ -60,9 +63,10 @@ struct LoginView: View {
                                 
                                 TextField("", text: $email)
                                     .placeholder(when: email.isEmpty) {
-                                        Text("name@example.com").foregroundColor(.white.opacity(0.2))
+                                        Text("Email").foregroundColor(.white.opacity(0.4))
                                     }
                                     .padding()
+                                    .foregroundColor(.white) // Ensure input text is white
                                     .frame(height: 60)
                                     .background(Color.white.opacity(0.05))
                                     .cornerRadius(16)
@@ -113,7 +117,10 @@ struct LoginView: View {
                                     }
                                 }
                                 Spacer()
-                                Button(action: {}) {
+                                Button(action: { 
+                                    resetEmail = email 
+                                    showForgotPasswordAlert = true 
+                                }) {
                                     Text("Forgot Password?")
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(.appText)
@@ -153,11 +160,10 @@ struct LoginView: View {
                             }
                             .padding(.vertical, 10)
                             
-                            HStack(spacing: 16) {
-                                SocialSignInButton(provider: .apple) {}
-                                    .frame(height: 56)
+                            VStack(spacing: 16) {
+
                                 
-                                SocialSignInButton(provider: .google) {
+                                Button(action: {
                                     Task {
                                         do {
                                             let result = try await AuthenticationService.shared.signInWithGoogle()
@@ -166,8 +172,23 @@ struct LoginView: View {
                                             print("Google Sign In Error: \(error)")
                                         }
                                     }
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image("Google")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 20, height: 20)
+                                        
+                                        Text("Continue with Google")
+                                            .font(.system(size: 17, weight: .medium))
+                                            .foregroundColor(.black)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.white)
+                                    .cornerRadius(8)
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                                 }
-                                .frame(height: 56)
                             }
                         }
                     }
@@ -175,6 +196,22 @@ struct LoginView: View {
                     .padding(.bottom, 40)
                 }
             }
+        }
+        .alert("Reset Password", isPresented: $showForgotPasswordAlert) {
+            TextField("Enter your email", text: $resetEmail)
+                .keyboardType(.emailAddress)
+            Button("Cancel", role: .cancel) { }
+            Button("Send Link") {
+                Task {
+                    do {
+                        try await AuthenticationService.shared.sendPasswordReset(email: resetEmail)
+                    } catch {
+                        print("Reset Password Error: \(error)")
+                    }
+                }
+            }
+        } message: {
+            Text("Enter your email address to receive a password reset link.")
         }
     }
 }

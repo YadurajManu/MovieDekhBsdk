@@ -13,103 +13,108 @@ struct WelcomeView: View {
     @State private var showSignup = false
     @State private var currentPosterIndex = 0
     @State private var timer: Timer?
+    @State private var scrollOffset: CGFloat = 0
     
     var body: some View {
-        ZStack {
-            // Dynamic Movie Poster Background with Ken Burns Effect
-            if !viewModel.movies.isEmpty {
-                TabView(selection: $currentPosterIndex) {
-                    ForEach(Array(viewModel.movies.prefix(10).enumerated()), id: \.element.id) { index, movie in
-                        CachedAsyncImage(url: movie.backdropURL) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .scaleEffect(currentPosterIndex == index ? 1.2 : 1.0)
-                                .offset(x: currentPosterIndex == index ? 20 : 0)
-                                .animation(.linear(duration: 8).repeatForever(autoreverses: true), value: currentPosterIndex)
-                                .clipped()
-                        } placeholder: {
-                            Color.black
+        GeometryReader { outerGeometry in
+            ZStack {
+                // Dynamic Movie Poster Background
+                GeometryReader { geometry in
+                    if !viewModel.movies.isEmpty {
+                        ZStack {
+                            ForEach(Array(viewModel.movies.prefix(10).enumerated()), id: \.element.id) { index, movie in
+                                CachedAsyncImage(url: movie.backdropURL) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: geometry.size.width, height: geometry.size.height)
+                                        .clipped()
+                                } placeholder: {
+                                    Color.black
+                                }
+                                .scaleEffect(currentPosterIndex == index ? 1.05 : 1.0) // Subtle Ken Burns
+                                .opacity(currentPosterIndex == index ? 1 : 0)
+                                .animation(.easeInOut(duration: 1.5), value: currentPosterIndex)
+                            }
                         }
-                        .tag(index)
+                        .ignoresSafeArea()
+                    } else {
+                        Color.black.ignoresSafeArea()
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
                 .ignoresSafeArea()
+                .scaleEffect(scrollOffset > 0 ? 1 + (scrollOffset / outerGeometry.size.height) : 1)
+                .offset(y: scrollOffset < 0 ? scrollOffset / 2 : 0) // Parallax Effect
                 
-                // Premium Gradient Overlay
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        .clear,
-                        .black.opacity(0.4),
-                        .black.opacity(0.8),
-                        .black
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-            } else {
-                Color.black.ignoresSafeArea()
-            }
-            
-            VStack(spacing: 0) {
-                Spacer()
-                
-                // Branding
-                VStack(spacing: 16) {
-                    Text("WatchToHeal")
-                        .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 60))
-                        .foregroundColor(.appPrimary)
-                        .shadow(color: .appPrimary.opacity(0.3), radius: 20)
-                    
-                    Text("Transform your relationship with cinema.\nTrack, Log & Heal.")
-                        .font(.system(size: 18, weight: .light))
-                        .italic()
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                        .lineSpacing(4)
-                }
-                
-                Spacer()
-                
-                // Cinematic Action Buttons
-                VStack(spacing: 20) {
-                    Button(action: { showLogin = true }) {
-                        Text("Explore Again")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .fill(Color.appPrimary)
-                                    .shadow(color: .appPrimary.opacity(0.4), radius: 15, x: 0, y: 8)
+                // Content with ScrollView for Parallax
+                ScrollView(showsIndicators: false) {
+                    ZStack {
+                        // Offset Reader
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: ViewOffsetKey.self,
+                                value: proxy.frame(in: .named("scroll")).minY
                             )
-                    }
-                    
-                    Button(action: { showSignup = true }) {
-                        Text("Join the Circle")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .fill(Color.white.opacity(0.08))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 18)
-                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
+                        }
+                        .frame(height: 0)
+                        
+                        VStack(spacing: 0) {
+                            Spacer()
+                            
+                            // Content
+                            VStack(spacing: 24) {
+                                
+                                VStack(spacing: 8) {
+                                    Text("WatchToHeal")
+                                        .font(.custom("AlumniSansSC-Italic-VariableFont_wght", size: 64))
+                                        .foregroundColor(.appPrimary)
+                                        .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 4)
+                                    
+                                    Text("Cinema as Therapy")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .tracking(2)
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .textCase(.uppercase)
+                                }
+                                
+                                Spacer().frame(height: 20)
+                                
+                                // Main Buttons
+                                VStack(spacing: 16) {
+                                    Button(action: { showSignup = true }) {
+                                        Text("Get Started")
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundColor(.black)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 56)
+                                            .background(Color.appPrimary)
+                                            .cornerRadius(16)
+                                    }
+                                    
+                                    Button(action: { showLogin = true }) {
+                                        Text("I have an account")
+                                            .font(.system(size: 17, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 56)
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                            }
+                            .padding(.bottom, 50)
+                            .padding(.top, 100) // Allow some scroll space
+                        }
+                        .frame(minHeight: outerGeometry.size.height)
                     }
                 }
-                .padding(.horizontal, 30)
-                .padding(.bottom, 60)
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ViewOffsetKey.self) { value in
+                    // Improve bounds to prevent glitches
+                    scrollOffset = value
+                }
             }
         }
+        .edgesIgnoringSafeArea(.all)
         .fullScreenCover(isPresented: $showLogin) { LoginView() }
         .fullScreenCover(isPresented: $showSignup) { SignupView() }
         .task {
@@ -122,9 +127,9 @@ struct WelcomeView: View {
     private func startPosterRotation() {
         timer = Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
             Task { @MainActor in
-                withAnimation(.easeInOut(duration: 2.0)) {
-                    if !viewModel.movies.isEmpty {
-                        currentPosterIndex = (currentPosterIndex + 1) % min(10, viewModel.movies.count)
+                if !viewModel.movies.isEmpty {
+                    withAnimation(.linear(duration: 6.0)) { // Smooth continuous transition
+                         currentPosterIndex = (currentPosterIndex + 1) % min(10, viewModel.movies.count)
                     }
                 }
             }

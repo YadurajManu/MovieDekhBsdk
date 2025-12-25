@@ -26,6 +26,10 @@ struct WatchToHealApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appViewModel)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                    appViewModel.handleDeepLink(url)
+                }
         }
     }
 }

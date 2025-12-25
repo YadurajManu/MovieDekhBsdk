@@ -443,12 +443,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8D5D6HU857;
+				DEVELOPMENT_TEAM = 428T9SP6S4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchToHeal/Info.plist;
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "WatchToHeal uses your calendar to remind you of upcoming movie releases.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find nearby cinemas showing this film.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -478,12 +476,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8D5D6HU857;
+				DEVELOPMENT_TEAM = 428T9SP6S4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchToHeal/Info.plist;
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "WatchToHeal uses your calendar to remind you of upcoming movie releases.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find nearby cinemas showing this film.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

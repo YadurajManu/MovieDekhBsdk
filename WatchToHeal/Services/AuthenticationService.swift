@@ -1,9 +1,10 @@
 import Foundation
+import Firebase
 import FirebaseAuth
 import GoogleSignIn
 import FirebaseCore
 import Combine
-import UIKit
+
 
 class AuthenticationService: ObservableObject {
     static let shared = AuthenticationService()
@@ -56,6 +57,12 @@ class AuthenticationService: ObservableObject {
                                                        accessToken: user.accessToken.tokenString)
         
         return try await Auth.auth().signIn(with: credential)
+    }
+    
+
+    
+    func sendPasswordReset(email: String) async throws {
+        try await Auth.auth().sendPasswordReset(withEmail: email)
     }
     
     func deleteAccount() async throws {
