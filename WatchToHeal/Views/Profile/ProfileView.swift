@@ -21,7 +21,7 @@ struct ProfileView: View {
     @State private var showStatsDetail = false
     @State private var cacheSize: String = ImageLoader.getCacheSize()
     @State private var rotationOffset: CGFloat = 0
-    @State private var showRecommendations = false
+
     @StateObject private var homeViewModel = HomeViewModel()
     @StateObject private var streamingSyncViewModel = StreamingSyncViewModel()
     
@@ -109,13 +109,7 @@ struct ProfileView: View {
                                         .overlay(Circle().stroke(Color.appPrimary.opacity(0.3), lineWidth: 4))
                                 }
                                 
-                                Button(action: { showEditProfile = true }) {
-                                    Image(systemName: "pencil.circle.fill")
-                                        .font(.system(size: 32))
-                                        .foregroundColor(.appPrimary)
-                                        .background(Circle().fill(Color.black))
-                                        .shadow(radius: 5)
-                                }
+
                             }
                             
                             VStack(spacing: 6) {
@@ -366,10 +360,7 @@ struct ProfileView: View {
                                     .padding()
                                 }
                                 Divider().background(Color.white.opacity(0.1))
-                                Button(action: { showRecommendations = true }) {
-                                    menuItem(icon: "sparkles", title: "Personalized For You")
-                                }
-                                Divider().background(Color.white.opacity(0.1))
+
                                 Button(action: { shareApp() }) {
                                     menuItem(icon: "paperplane.fill", title: "Invite Friends")
                                 }
@@ -431,7 +422,9 @@ struct ProfileView: View {
                                     .padding()
                                 }
                                 Divider().background(Color.white.opacity(0.1))
-                                menuItem(icon: "info.circle.fill", title: "About WatchToHeal")
+                                NavigationLink(destination: AboutView()) {
+                                    menuItem(icon: "info.circle.fill", title: "About WatchToHeal")
+                                }
                             }
                             
                             // ADMIN TOOLS (Conditional)
@@ -469,14 +462,7 @@ struct ProfileView: View {
         .fullScreenCover(isPresented: $showStatsDetail) {
             StatsDetailView()
         }
-        .fullScreenCover(isPresented: $showRecommendations) {
-            RecommendationsView(viewModel: homeViewModel)
-                .task {
-                    if homeViewModel.personalizedRecommendations.isEmpty {
-                        await homeViewModel.loadPersonalizedRecommendations()
-                    }
-                }
-        }
+
         .sheet(isPresented: $showTraktAuth) {
             TraktAuthSheet()
         }

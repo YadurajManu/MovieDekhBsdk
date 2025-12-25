@@ -13,7 +13,7 @@ struct HomeView: View {
     @State private var selectedMovie: Movie?
     @State private var selectedSeries: Movie?
     @State private var selectedCategory: MovieCategory?
-    @State private var showRecommendations = false
+
     @State private var showProfile = false
     
     var body: some View {
@@ -76,9 +76,7 @@ struct HomeView: View {
         .sheet(isPresented: $showProfile) {
             ProfileView()
         }
-        .fullScreenCover(isPresented: $showRecommendations) {
-            RecommendationsView(viewModel: viewModel)
-        }
+
         .navigationBarHidden(true)
         .task {
             await viewModel.loadAllMovies(region: appViewModel.userProfile?.preferredRegion ?? "US")
@@ -137,13 +135,7 @@ struct HomeView: View {
             
             VStack(spacing: 32) { // Inner VStack for lists
                 // Personalized Recommendations
-                if !viewModel.personalizedRecommendations.isEmpty {
-                    MovieSectionView(title: "Recommended for You", movies: viewModel.personalizedRecommendations) { movie in
-                        selectedMovie = movie
-                    } onSeeAllTap: {
-                        showRecommendations = true
-                    }
-                }
+
                 
                 // Now Playing
                 MovieSectionView(title: "Now Playing in Theaters", movies: viewModel.nowPlaying) { movie in

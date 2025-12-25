@@ -34,7 +34,7 @@ class HomeViewModel: ObservableObject {
     @Published var nowPlaying: [Movie] = []
     @Published var upcoming: [Movie] = []
     @Published var topRated: [Movie] = []
-    @Published var personalizedRecommendations: [Movie] = []
+
     
     // Series Data
     @Published var tradingSeries: [Movie] = []
@@ -50,7 +50,7 @@ class HomeViewModel: ObservableObject {
     @Published var appleTVSeries: [Movie] = []
     
     // UI State
-    @Published var isLoadingRecommendations = false
+
     
     // World Cinema
     @Published var japaneseMasterpieces: [Movie] = []
@@ -86,7 +86,7 @@ class HomeViewModel: ObservableObject {
         errorMessage = nil
         
         // Fetch all movie categories concurrently (including recommendations)
-        async let recommendationsTask: Void = loadPersonalizedRecommendations()
+
         async let trendingTask = TMDBService.shared.fetchTrending()
         async let nowPlayingTask = TMDBService.shared.fetchNowPlaying(region: region)
         async let upcomingTask = TMDBService.shared.fetchUpcoming(region: region)
@@ -120,7 +120,7 @@ class HomeViewModel: ObservableObject {
         do {
             // Trigger all tasks and wait for them
             _ = try await (
-                recommendationsTask, trendingTask, nowPlayingTask, upcomingTask, topRatedTask,
+                trendingTask, nowPlayingTask, upcomingTask, topRatedTask,
                 actionTask, comedyTask, dramaTask, sciFiTask,
                 horrorTask, romanceTask, thrillerTask, animationTask, documentaryTask,
                 crimeTask, mysteryTask, adventureTask, warTask,
@@ -170,56 +170,7 @@ class HomeViewModel: ObservableObject {
         isLoading = false
     }
     
-    func loadPersonalizedRecommendations() async {
-        isLoadingRecommendations = true
-        
-        // Get seeds from Watchlist and History
-        let watchlistSeeds = WatchlistManager.shared.watchlistMovies.compactMap { $0.title }
-        let historySeeds = HistoryManager.shared.watchedMovies.compactMap { $0.title }
-        var allSeeds = Array(Set(watchlistSeeds + historySeeds))
-        
-        // Fallback seeds if user has no data yet (ensure it's not empty)
-        if allSeeds.isEmpty {
-            allSeeds = ["Interstellar", "Inception", "The Dark Knight", "The Godfather", "Pulp Fiction"]
-        }
-        
-        let finalSeeds = Array(allSeeds.prefix(5))
-        
-        do {
-            let titles = try await TasteDiveService.shared.fetchRecommendations(for: finalSeeds)
-            
-            // Map titles back to TMDB movies concurrently
-            var resolvedMovies: [Movie] = []
-            
-            await withTaskGroup(of: Movie?.self) { group in
-                for title in titles.prefix(20) {
-                    group.addTask {
-                        do {
-                            let results = try await TMDBService.shared.searchMovies(query: title)
-                            return results.first
-                        } catch {
-                            return nil
-                        }
-                    }
-                }
-                
-                for await movie in group {
-                    if let movie = movie {
-                        resolvedMovies.append(movie)
-                    }
-                }
-            }
-            
-            // Filter out duplicates and movies already in history
-            let watchedIds = Set(HistoryManager.shared.watchedMovies.map { $0.id })
-            self.personalizedRecommendations = resolvedMovies.filter { !watchedIds.contains($0.id) }
-            
-        } catch {
-            print("Failed to load personalized recommendations: \(error)")
-        }
-        
-        isLoadingRecommendations = false
-    }
+
     
     private func loadDirectorData() async {
         // Fetch first 3 directors for performance

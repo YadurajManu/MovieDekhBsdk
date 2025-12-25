@@ -26,7 +26,8 @@ struct MoviePoll: Codable, Identifiable {
     @DocumentID var id: String?
     let question: String
     let options: [PollOptionData]
-    var votes: [Int] // Index-based vote counts
+    var votes: [Int] // Index-based vote counts/Users/sujeetkumarsingh/Desktop/WatchToHeal/WatchToHeal/Models/MoviePoll.swift:82:29 Value of optional type 'DocumentID<String>?' must be unwrapped to a value of type 'DocumentID<String>'
+
     var votedUserIds: [String]
     let createdAt: Date
     let expiresAt: Date?
@@ -42,6 +43,10 @@ struct MoviePoll: Codable, Identifiable {
     // Social Features
     var likedUserIds: [String] = []
     var category: String? // e.g., "Battle", "Versus", "Recommendation"
+    
+    // Engagement Metrics (for smart feed sections)
+    var engagementScore: Double? = 0.0
+    var lastActivityAt: Date?
     
     var totalVotes: Int {
         votes.reduce(0, +)
@@ -69,5 +74,30 @@ struct MoviePoll: Codable, Identifiable {
         case category
         case globalMovieId
         case globalMovieTitle
+        case engagementScore
+        case lastActivityAt
+    }
+    
+    // Memberwise initializer
+    init(id: String? = nil, question: String, options: [PollOptionData], votes: [Int], votedUserIds: [String], createdAt: Date, expiresAt: Date?, isFinalized: Bool, type: PollType, creatorId: String?, creatorName: String?, creatorUsername: String?, creatorPhotoURL: String?, likedUserIds: [String], category: String?, engagementScore: Double? = 0.0, lastActivityAt: Date? = nil, globalMovieId: Int?, globalMovieTitle: String?) {
+        self.id = id
+        self.question = question
+        self.options = options
+        self.votes = votes
+        self.votedUserIds = votedUserIds
+        self.createdAt = createdAt
+        self.expiresAt = expiresAt
+        self.isFinalized = isFinalized
+        self.type = type
+        self.creatorId = creatorId
+        self.creatorName = creatorName
+        self.creatorUsername = creatorUsername
+        self.creatorPhotoURL = creatorPhotoURL
+        self.likedUserIds = likedUserIds
+        self.category = category
+        self.engagementScore = engagementScore
+        self.lastActivityAt = lastActivityAt ?? createdAt
+        self.globalMovieId = globalMovieId
+        self.globalMovieTitle = globalMovieTitle
     }
 }

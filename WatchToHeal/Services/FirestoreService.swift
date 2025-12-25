@@ -1483,6 +1483,133 @@ class FirestoreService {
         })
     }
     
+    // MARK: - Smart Feed Sections
+    
+    /// Fetch trending polls (high engagement in last 48 hours)
+    func fetchTrendingPolls(limit: Int = 5) async throws -> [MoviePoll] {
+        let cutoff = Calendar.current.date(byAdding: .hour, value: -48, to: Date())!
+        let snapshot = try await db.collection("polls")
+            .whereField("createdAt", isGreaterThan: cutoff)
+            .order(by: "engagementScore", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { try? $0.data(as: MoviePoll.self) }
+    }
+    
+    /// Fetch hot debates (high reply count in last 7 days)
+    func fetchHotDebates(limit: Int = 5) async throws -> [CommunityQuestion] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        let snapshot = try await db.collection("communityQuestions")
+            .whereField("createdAt", isGreaterThan: cutoff)
+            .order(by: "replyCount", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { try? $0.data(as: CommunityQuestion.self) }
+    }
+    
+    /// Fetch latest pulse content (mixed polls + questions)
+    func fetchLatestPulseContent(limit: Int = 10) async throws -> [PulseItem] {
+        async let pollsTask = db.collection("polls")
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        async let questionsTask = db.collection("communityQuestions")
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        let (pollSnapshot, questionSnapshot) = try await (pollsTask, questionsTask)
+        
+        var items: [PulseItem] = []
+        items += pollSnapshot.documents.compactMap { try? $0.data(as: MoviePoll.self) }.map { .poll($0) }
+        items += questionSnapshot.documents.compactMap { try? $0.data(as: CommunityQuestion.self) }.map { .question($0) }
+        
+        return items.sorted { $0.createdAt > $1.createdAt }.prefix(limit).map { $0 }
+    }
+    
+    /// Fetch user's own content
+    func fetchUserContent(userId: String, limit: Int = 5) async throws -> [PulseItem] {
+        async let pollsTask = db.collection("polls")
+            .whereField("creatorId", isEqualTo: userId)
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        async let questionsTask = db.collection("communityQuestions")
+            .whereField("creatorId", isEqualTo: userId)
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        let (pollSnapshot, questionSnapshot) = try await (pollsTask, questionsTask)
+        
+        var items: [PulseItem] = []
+        items += pollSnapshot.documents.compactMap { try? $0.data(as: MoviePoll.self) }.map { .poll($0) }
+        items += questionSnapshot.documents.compactMap { try? $0.data(as: CommunityQuestion.self) }.map { .question($0) }
+        
+        return items.sorted { $0.createdAt > $1.createdAt }.prefix(limit).map { $0 }
+    }
+    
+    /// Fetch top contributors (users with highest total engagement this week)
+    func fetchTopContributors(limit: Int = 3) async throws -> [ContributorProfile] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        
+        // Fetch recent polls
+        let pollSnapshot = try await db.collection("polls")
+            .whereField("createdAt", isGreaterThan: cutoff)
+            .getDocuments()
+        
+        // Fetch recent questions
+        let questionSnapshot = try await db.collection("communityQuestions")
+            .whereField("createdAt", isGreaterThan: cutoff)
+            .getDocuments()
+        
+        // Aggregate engagement by user
+        var contributorMap: [String: (username: String, photoURL: String?, totalEngagement: Double, postCount: Int)] = [:]
+        
+        for doc in pollSnapshot.documents {
+            if let poll = try? doc.data(as: MoviePoll.self),
+               let creatorId = poll.creatorId,
+               let username = poll.creatorUsername {
+                let existing = contributorMap[creatorId] ?? (username: username, photoURL: poll.creatorPhotoURL, totalEngagement: 0, postCount: 0)
+                contributorMap[creatorId] = (
+                    username: username,
+                    photoURL: poll.creatorPhotoURL,
+                    totalEngagement: existing.totalEngagement + (poll.engagementScore ?? 0.0),
+                    postCount: existing.postCount + 1
+                )
+            }
+        }
+        
+        for doc in questionSnapshot.documents {
+            if let question = try? doc.data(as: CommunityQuestion.self) {
+                let existing = contributorMap[question.creatorId] ?? (username: question.creatorUsername, photoURL: question.creatorPhotoURL, totalEngagement: 0, postCount: 0)
+                contributorMap[question.creatorId] = (
+                    username: question.creatorUsername,
+                    photoURL: question.creatorPhotoURL,
+                    totalEngagement: existing.totalEngagement + (question.engagementScore ?? 0.0),
+                    postCount: existing.postCount + 1
+                )
+            }
+        }
+        
+        // Sort and return top contributors
+        let sorted = contributorMap.map { (id, data) in
+            ContributorProfile(
+                id: id,
+                username: data.username,
+                photoURL: data.photoURL,
+                totalEngagement: data.totalEngagement,
+                postCount: data.postCount
+            )
+        }.sorted { $0.totalEngagement > $1.totalEngagement }
+        
+        return Array(sorted.prefix(limit))
+    }
+    
     // MARK: - Platform Analytics
     func fetchPlatformAnalytics() async throws -> [String: Any] {
         // In a production app, these would be cached or use Firestore Aggregations

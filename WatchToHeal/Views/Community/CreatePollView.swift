@@ -342,6 +342,7 @@ struct CreatePollView: View {
         }
         
         let newPoll = MoviePoll(
+            id: nil,
             question: question,
             options: pollOptions,
             votes: Array(repeating: 0, count: pollOptions.count),
@@ -356,6 +357,8 @@ struct CreatePollView: View {
             creatorPhotoURL: profile.photoURL?.absoluteString,
             likedUserIds: [],
             category: pollType == .movie ? "Battle" : "Debate",
+            engagementScore: 0.0,
+            lastActivityAt: Date(),
             globalMovieId: nil,
             globalMovieTitle: nil
         )

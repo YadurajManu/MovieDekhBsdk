@@ -12,6 +12,7 @@
 		907A28B72EEEC506003FC6F2 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28B62EEEC506003FC6F2 /* FirebaseAuth */; };
 		907A28B92EEEC506003FC6F2 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28B82EEEC506003FC6F2 /* FirebaseCore */; };
 		907A28BB2EEEC506003FC6F2 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28BA2EEEC506003FC6F2 /* FirebaseFirestore */; };
+		90AC97FD2EFB122700768BD5 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 90AC97FC2EFB122700768BD5 /* FirebaseAILogic */; };
 		90C50FC82EF9B0790062B131 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 90C50FC72EF9B0790062B131 /* Lottie */; };
 /* End PBXBuildFile section */
 
@@ -80,6 +81,7 @@
 				907A28B22EEEC46D003FC6F2 /* GoogleSignIn in Frameworks */,
 				907A28B72EEEC506003FC6F2 /* FirebaseAuth in Frameworks */,
 				907A28B92EEEC506003FC6F2 /* FirebaseCore in Frameworks */,
+				90AC97FD2EFB122700768BD5 /* FirebaseAILogic in Frameworks */,
 				907A28BB2EEEC506003FC6F2 /* FirebaseFirestore in Frameworks */,
 				907A28B42EEEC46D003FC6F2 /* GoogleSignInSwift in Frameworks */,
 				90C50FC82EF9B0790062B131 /* Lottie in Frameworks */,
@@ -156,6 +158,7 @@
 				907A28B82EEEC506003FC6F2 /* FirebaseCore */,
 				907A28BA2EEEC506003FC6F2 /* FirebaseFirestore */,
 				90C50FC72EF9B0790062B131 /* Lottie */,
+				90AC97FC2EFB122700768BD5 /* FirebaseAILogic */,
 			);
 			productName = WatchToHeal;
 			productReference = 90F9EA892EEE0B6600A8FF23 /* WatchToHeal.app */;
@@ -444,6 +447,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchToHeal/Info.plist;
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "WatchToHeal uses your calendar to remind you of upcoming movie releases.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find nearby cinemas showing this film.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -477,6 +482,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchToHeal/Info.plist;
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "WatchToHeal uses your calendar to remind you of upcoming movie releases.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find nearby cinemas showing this film.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -676,6 +683,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 907A28B52EEEC506003FC6F2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		90AC97FC2EFB122700768BD5 /* FirebaseAILogic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 907A28B52EEEC506003FC6F2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAILogic;
 		};
 		90C50FC72EF9B0790062B131 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -19,7 +19,5 @@
 	<array>
 		<string>AlumniSansSC-Italic-VariableFont_wght</string>
 	</array>
-	<key>NSCalendarsUsageDescription</key>
-	<string>WatchToHeal uses your calendar to remind you of upcoming movie releases.</string>
 </dict>
 </plist>

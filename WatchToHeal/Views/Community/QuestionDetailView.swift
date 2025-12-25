@@ -145,8 +145,62 @@ struct QuestionDetailView: View {
     private var replyInput: some View {
         VStack(spacing: 0) {
             Divider().background(Color.white.opacity(0.1))
+            
+            // Suggestions Overlay
+            if !viewModel.suggestedUsers.isEmpty {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(viewModel.suggestedUsers) { user in
+                            Button(action: {
+                                viewModel.selectMention(user: user)
+                            }) {
+                                HStack(spacing: 12) {
+                                    if let photo = user.photoURL {
+                                        AsyncImage(url: photo) { image in
+                                            image.resizable().aspectRatio(contentMode: .fill)
+                                        } placeholder: {
+                                            Color.gray
+                                        }
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(Circle())
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray)
+                                            .frame(width: 32, height: 32)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(user.username ?? user.name)
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(.appText)
+                                        if user.username != nil {
+                                            Text(user.name)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.appTextSecondary)
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            Divider().background(Color.white.opacity(0.1))
+                        }
+                    }
+                }
+                .frame(maxHeight: 200)
+                .background(Color.appBackground)
+                .cornerRadius(12)
+                .shadow(radius: 10)
+                .padding(.horizontal, 16)
+                .transition(.opacity)
+            }
+            
             HStack(spacing: 12) {
                 TextField("Add to the debate...", text: $viewModel.replyText)
+                    .onChange(of: viewModel.replyText) { _, newValue in
+                        viewModel.checkForMentions(text: newValue)
+                    }
                     .padding(.horizontal, 16)
                     .frame(height: 50)
                     .background(Color.white.opacity(0.05))
@@ -207,11 +261,10 @@ struct CommunityReplyRow: View {
                         }
                     }
                 }
-                
-                Text(reply.text)
+                Text(parsedText(from: reply.text))
                     .font(.system(size: 14))
-                    .foregroundColor(.appText)
                     .lineSpacing(4)
+                    .textSelection(.enabled)
                 
                 Button(action: onLike) {
                     HStack(spacing: 4) {
@@ -226,6 +279,25 @@ struct CommunityReplyRow: View {
             }
         }
     }
+
+    private func parsedText(from text: String) -> AttributedString {
+        var attributed = AttributedString(text)
+        attributed.foregroundColor = .appText
+        
+        do {
+            let pattern = /@\w+/
+            for match in text.matches(of: pattern) {
+                if let range = attributed.range(of: match.output) {
+                    attributed[range].foregroundColor = .appPrimary
+                    attributed[range].font = .system(size: 14, weight: .bold)
+                }
+            }
+        } catch {
+            print("Regex error: \(error)")
+        }
+        
+        return attributed
+    }
 }
 
 @MainActor
@@ -236,6 +308,9 @@ class QuestionDetailViewModel: ObservableObject {
     @Published var replyText = ""
     @Published var questionLikeCount = 0
     @Published var likedUserIds: [String] = []
+    @Published var suggestedUsers: [UserProfile] = []
+    
+    private var mentionTask: Task<Void, Never>?
     
     private var replyListener: ListenerRegistration?
     private var questionListener: ListenerRegistration?
@@ -253,6 +328,12 @@ class QuestionDetailViewModel: ObservableObject {
     func startListening() {
         isLoading = true
         
+        guard !questionId.isEmpty else {
+            print("⚠️ QuestionDetailViewModel: questionId is empty, skipping listeners")
+            isLoading = false
+            return
+        }
+        
         // Listen to question for likes/updates
         questionListener = Firestore.firestore().collection("communityQuestions").document(questionId)
             .addSnapshotListener { snapshot, _ in
@@ -265,7 +346,7 @@ class QuestionDetailViewModel: ObservableObject {
         // Listen to replies
         replyListener = Firestore.firestore().collection("communityQuestions").document(questionId)
             .collection("replies")
-            .order(by: "createdAt", descending: true)
+            .order(by: "createdAt", descending: false)
             .addSnapshotListener { snapshot, _ in
                 self.replies = snapshot?.documents.compactMap { try? $0.data(as: CommunityReply.self) } ?? []
                 self.isLoading = false
@@ -277,14 +358,17 @@ class QuestionDetailViewModel: ObservableObject {
     }
     
     func toggleQuestionLike(userId: String) async {
+        guard !questionId.isEmpty else { return }
         try? await FirestoreService.shared.toggleQuestionLike(questionId: questionId, userId: userId)
     }
     
     func deleteQuestion() async {
+        guard !questionId.isEmpty else { return }
         try? await FirestoreService.shared.deleteQuestion(questionId: questionId)
     }
     
     func postReply(profile: UserProfile) async {
+        guard !questionId.isEmpty else { return }
         let reply = CommunityReply(
             text: replyText,
             userId: profile.id,
@@ -303,10 +387,50 @@ class QuestionDetailViewModel: ObservableObject {
     }
     
     func toggleReplyLike(replyId: String, userId: String) async {
+        guard !questionId.isEmpty else { return }
         try? await FirestoreService.shared.toggleReplyLike(questionId: questionId, replyId: replyId, userId: userId)
     }
     
     func deleteReply(replyId: String) async {
+        guard !questionId.isEmpty else { return }
         try? await FirestoreService.shared.deleteReply(questionId: questionId, replyId: replyId)
+    }
+    
+    func checkForMentions(text: String) {
+        mentionTask?.cancel()
+        suggestedUsers = []
+        
+        guard let lastWord = text.split(separator: " ").last,
+              lastWord.hasPrefix("@") else {
+            return
+        }
+        
+        let query = String(lastWord.dropFirst())
+        guard !query.isEmpty else { return }
+        
+        mentionTask = Task {
+            do {
+                // Determine if this is a newly started query or continuation
+                // Small delay to debounce typing
+                try await Task.sleep(nanoseconds: 300_000_000) 
+                
+                let users = try await FirestoreService.shared.searchUsers(query: query)
+                await MainActor.run {
+                    self.suggestedUsers = users
+                }
+            } catch {
+                print("Error searching users: \(error)")
+            }
+        }
+    }
+    
+    func selectMention(user: UserProfile) {
+        // Robust replacement: find the last occurrence of "@" and replace up to the end
+        guard let range = replyText.range(of: "@", options: .backwards) else { return }
+        
+        let prefix = replyText[..<range.lowerBound]
+        // We replace everything after the last '@' with the new mention + space
+        replyText = String(prefix) + "@" + (user.username ?? user.name) + " "
+        suggestedUsers = []
     }
 }

@@ -12,6 +12,23 @@ class AppViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
+    // Deep Link State
+    @Published var deepLinkDestination: DeepLinkDestination?
+    
+    enum DeepLinkDestination: Identifiable {
+        case movie(id: Int)
+        case show(id: Int)
+        case person(id: Int, name: String)
+        
+        var id: String {
+            switch self {
+            case .movie(let id): return "movie_\(id)"
+            case .show(let id): return "show_\(id)"
+            case .person(let id, _): return "person_\(id)"
+            }
+        }
+    }
+    
     init() {
         // Removed forced sign-out logic to allow persistent sessions
     
@@ -126,4 +143,37 @@ class AppViewModel: ObservableObject {
         self.isAuthenticated = true
         self.hasCompletedOnboarding = true // Admins bypass onboarding
     }
+
+    
+    // MARK: - Deep Link Handler
+    func handleDeepLink(_ url: URL) {
+        // Support both custom scheme (if registered) and https fallback
+        guard url.scheme == "watchtoheal" || url.host == "watchtoheal.com" else { return }
+        
+        // URL Structure: https://watchtoheal.com/type/id?name=EncodedName
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        
+        guard pathComponents.count >= 2,
+              let id = Int(pathComponents[1])
+        else { return }
+        
+        let type = pathComponents[0] // movie, show, person
+        
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return }
+        let name = components.queryItems?.first(where: { $0.name == "name" })?.value ?? "Unknown"
+        
+        Task { @MainActor in
+            switch type {
+            case "movie":
+                self.deepLinkDestination = .movie(id: id)
+            case "show":
+                self.deepLinkDestination = .show(id: id)
+            case "person":
+                self.deepLinkDestination = .person(id: id, name: name)
+            default:
+                break
+            }
+        }
+    }
 }
+

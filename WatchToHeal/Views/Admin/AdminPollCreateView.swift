@@ -353,6 +353,7 @@ struct AdminPollCreateView: View {
         }
         
         let newPoll = MoviePoll(
+            id: nil,
             question: question,
             options: pollOptions,
             votes: Array(repeating: 0, count: pollOptions.count),
@@ -361,6 +362,14 @@ struct AdminPollCreateView: View {
             expiresAt: expiresAt,
             isFinalized: false,
             type: pollType,
+            creatorId: nil,
+            creatorName: nil,
+            creatorUsername: nil,
+            creatorPhotoURL: nil,
+            likedUserIds: [],
+            category: pollType == .movie ? "Battle" : "Official",
+            engagementScore: 0.0,
+            lastActivityAt: Date(),
             globalMovieId: nil,
             globalMovieTitle: nil
         )

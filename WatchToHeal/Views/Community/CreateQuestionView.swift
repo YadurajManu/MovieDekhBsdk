@@ -91,12 +91,18 @@ struct CreateQuestionView: View {
         isSubmitting = true
         
         let question = CommunityQuestion(
+            id: nil,
             text: text,
             creatorId: profile.id,
             creatorName: profile.name,
             creatorUsername: profile.username ?? profile.name,
             creatorPhotoURL: profile.photoURL?.absoluteString,
-            createdAt: Date()
+            createdAt: Date(),
+            likeCount: 0,
+            likedUserIds: [],
+            replyCount: 0,
+            engagementScore: 0.0,
+            lastActivityAt: Date()
         )
         
         Task {
