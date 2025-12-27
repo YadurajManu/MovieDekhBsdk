@@ -13,6 +13,7 @@ struct SearchView: View {
     @State private var selectedMovie: Movie?
     @State private var selectedSeries: Movie?
     @State private var selectedTrailer: TMDBService.MovieTrailer?
+    @State private var selectedActorId: IdentifiableInt?
     @State private var discoveryTab = 0 // 0: Staff Picks, 1: Collections
     @Namespace private var discoveryNamespace
     
@@ -347,25 +348,29 @@ struct SearchView: View {
                                             .padding(.horizontal, 20)
                                         
                                         ForEach(people) { person in
-                                            HStack(spacing: 16) {
-                                                AsyncImage(url: person.imageURL) { phase in
-                                                    if let image = phase.image {
-                                                        image.resizable().aspectRatio(contentMode: .fill)
-                                                    } else {
-                                                        Circle().fill(Color.white.opacity(0.05))
+                                            Button(action: { selectedActorId = IdentifiableInt(id: person.id) }) {
+                                                HStack(spacing: 16) {
+                                                    AsyncImage(url: person.imageURL) { phase in
+                                                        if let image = phase.image {
+                                                            image.resizable().aspectRatio(contentMode: .fill)
+                                                        } else {
+                                                            Circle().fill(Color.white.opacity(0.05))
+                                                        }
                                                     }
+                                                    .frame(width: 50, height: 50)
+                                                    .clipShape(Circle())
+                                                    
+                                                    Text(person.displayTitle)
+                                                        .font(.system(size: 16, weight: .bold))
+                                                        .foregroundColor(.appText)
+                                                    
+                                                    Spacer()
                                                 }
-                                                .frame(width: 50, height: 50)
-                                                .clipShape(Circle())
-                                                
-                                                Text(person.displayTitle)
-                                                    .font(.system(size: 16, weight: .bold))
-                                                    .foregroundColor(.appText)
-                                                
-                                                Spacer()
+                                                .padding(.horizontal, 20)
+                                                .padding(.vertical, 8)
                                             }
-                                            .padding(.horizontal, 20)
-                                            .padding(.vertical, 8)
+                                            .buttonStyle(PlainButtonStyle())
+                                            
                                             Divider()
                                                 .background(Color.white.opacity(0.05))
                                                 .padding(.leading, 86)
@@ -384,6 +389,9 @@ struct SearchView: View {
         }
         .fullScreenCover(item: $selectedSeries) { series in
             SeriesDetailView(seriesId: series.id)
+        }
+        .fullScreenCover(item: $selectedActorId) { wrapper in
+            ActorDetailView(actorId: wrapper.id)
         }
         .sheet(item: $selectedTrailer) { trailer in
             YouTubeView(videoID: trailer.youtubeKey)

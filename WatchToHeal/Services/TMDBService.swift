@@ -356,68 +356,11 @@ class TMDBService {
     
     // MARK: - Director/Person Methods
     
-    struct PersonDetail: Codable {
-        let id: Int
-        let name: String
-        let biography: String?
-        let profilePath: String?
-        let knownForDepartment: String?
-        let birthday: String?
-        let deathday: String?
-        let placeOfBirth: String?
-        let images: PersonImages?
-        
-        enum CodingKeys: String, CodingKey {
-            case id, name, biography, birthday, deathday, images
-            case profilePath = "profile_path"
-            case knownForDepartment = "known_for_department"
-            case placeOfBirth = "place_of_birth"
-        }
-        
-        struct PersonImages: Codable {
-            let profiles: [Image]
-        }
-        
-        struct Image: Codable, Identifiable {
-            let filePath: String
-            let height: Int
-            let width: Int
-            let voteAverage: Double
-            
-            var id: String { filePath }
-            
-            var url: URL? {
-                URL(string: "https://image.tmdb.org/t/p/original\(filePath)")
-            }
-            
-            enum CodingKeys: String, CodingKey {
-                case filePath = "file_path"
-                case height, width
-                case voteAverage = "vote_average"
-            }
-        }
-    }
-    
-    struct PersonMovieCreditsResponse: Codable {
-        let cast: [Movie]
-        let crew: [CrewMember]
-    }
-    
-    struct CrewMember: Codable {
-        let id: Int
-        let title: String
-        let posterPath: String?
-        let voteAverage: Double
-        let releaseDate: String?
-        let job: String
-        let department: String
-        
-        enum CodingKeys: String, CodingKey {
-            case id, title, job, department
-            case posterPath = "poster_path"
-            case voteAverage = "vote_average"
-            case releaseDate = "release_date"
-        }
+    func fetchPersonCombinedCredits(id: Int) async throws -> CombinedCreditsResponse {
+        let urlString = "\(baseURL)/person/\(id)/combined_credits?api_key=\(apiKey)&language=en-US"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        let (data, _) = try await urlSession.data(from: url)
+        return try JSONDecoder().decode(CombinedCreditsResponse.self, from: data)
     }
     
     func fetchPersonDetails(id: Int) async throws -> PersonDetail {

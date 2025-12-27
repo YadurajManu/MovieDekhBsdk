@@ -13,6 +13,7 @@
 		907A28B92EEEC506003FC6F2 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28B82EEEC506003FC6F2 /* FirebaseCore */; };
 		907A28BB2EEEC506003FC6F2 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 907A28BA2EEEC506003FC6F2 /* FirebaseFirestore */; };
 		90AC97FD2EFB122700768BD5 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 90AC97FC2EFB122700768BD5 /* FirebaseAILogic */; };
+		90C1624C2EFE4EBF00F07ED7 /* Auth0 in Frameworks */ = {isa = PBXBuildFile; productRef = 90C1624B2EFE4EBF00F07ED7 /* Auth0 */; };
 		90C50FC82EF9B0790062B131 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 90C50FC72EF9B0790062B131 /* Lottie */; };
 /* End PBXBuildFile section */
 
@@ -85,6 +86,7 @@
 				907A28BB2EEEC506003FC6F2 /* FirebaseFirestore in Frameworks */,
 				907A28B42EEEC46D003FC6F2 /* GoogleSignInSwift in Frameworks */,
 				90C50FC82EF9B0790062B131 /* Lottie in Frameworks */,
+				90C1624C2EFE4EBF00F07ED7 /* Auth0 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,6 +161,7 @@
 				907A28BA2EEEC506003FC6F2 /* FirebaseFirestore */,
 				90C50FC72EF9B0790062B131 /* Lottie */,
 				90AC97FC2EFB122700768BD5 /* FirebaseAILogic */,
+				90C1624B2EFE4EBF00F07ED7 /* Auth0 */,
 			);
 			productName = WatchToHeal;
 			productReference = 90F9EA892EEE0B6600A8FF23 /* WatchToHeal.app */;
@@ -240,6 +243,7 @@
 				907A28B02EEEC46D003FC6F2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				907A28B52EEEC506003FC6F2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				90C50FC62EF9B0790062B131 /* XCRemoteSwiftPackageReference "lottie-ios" */,
+				90C1624A2EFE4EBF00F07ED7 /* XCRemoteSwiftPackageReference "Auth0" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 90F9EA8A2EEE0B6600A8FF23 /* Products */;
@@ -644,6 +648,14 @@
 				minimumVersion = 12.7.0;
 			};
 		};
+		90C1624A2EFE4EBF00F07ED7 /* XCRemoteSwiftPackageReference "Auth0" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/auth0/Auth0.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.16.1;
+			};
+		};
 		90C50FC62EF9B0790062B131 /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-ios.git";
@@ -684,6 +696,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 907A28B52EEEC506003FC6F2 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAILogic;
+		};
+		90C1624B2EFE4EBF00F07ED7 /* Auth0 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 90C1624A2EFE4EBF00F07ED7 /* XCRemoteSwiftPackageReference "Auth0" */;
+			productName = Auth0;
 		};
 		90C50FC72EF9B0790062B131 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;

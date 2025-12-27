@@ -263,7 +263,7 @@ struct InfoStatItem: View {
 
 @MainActor
 class DirectorDetailViewModel: ObservableObject {
-    @Published var directorDetail: TMDBService.PersonDetail?
+    @Published var directorDetail: PersonDetail?
     @Published var movies: [Movie] = []
     @Published var isLoading = false
     

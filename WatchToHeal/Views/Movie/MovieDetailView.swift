@@ -20,6 +20,7 @@ struct MovieDetailView: View {
     @State private var toastMessage: String?
     @State private var showToast = false
     @State private var showRecommendSheet = false
+    @State private var selectedActorId: IdentifiableInt?
     
     var body: some View {
         GeometryReader { geometry in
@@ -179,29 +180,32 @@ struct MovieDetailView: View {
                                         ScrollView(.horizontal, showsIndicators: false) {
                                             HStack(spacing: 20) {
                                                 ForEach(viewModel.cast.prefix(12)) { member in
-                                                    VStack(spacing: 12) {
-                                                        CachedAsyncImage(url: member.profileURL) { image in
-                                                            image.resizable().scaledToFill()
-                                                        } placeholder: {
-                                                            Circle().fill(Color.white.opacity(0.05))
-                                                        }
-                                                        .frame(width: 70, height: 70)
-                                                        .clipShape(Circle())
-                                                        .shadow(color: .black.opacity(0.3), radius: 5, y: 3)
-                                                        
-                                                        VStack(spacing: 2) {
-                                                            Text(member.name)
-                                                                .font(.system(size: 12, weight: .bold))
-                                                                .foregroundColor(.appText)
-                                                                .lineLimit(1)
+                                                    Button(action: { selectedActorId = IdentifiableInt(id: member.id) }) {
+                                                        VStack(spacing: 12) {
+                                                            CachedAsyncImage(url: member.profileURL) { image in
+                                                                image.resizable().scaledToFill()
+                                                            } placeholder: {
+                                                                Circle().fill(Color.white.opacity(0.05))
+                                                            }
+                                                            .frame(width: 70, height: 70)
+                                                            .clipShape(Circle())
+                                                            .shadow(color: .black.opacity(0.3), radius: 5, y: 3)
                                                             
-                                                            Text(member.character)
-                                                                .font(.system(size: 10))
-                                                                .foregroundColor(.appTextSecondary)
-                                                                .lineLimit(1)
+                                                            VStack(spacing: 2) {
+                                                                Text(member.name)
+                                                                    .font(.system(size: 12, weight: .bold))
+                                                                    .foregroundColor(.appText)
+                                                                    .lineLimit(1)
+                                                                
+                                                                Text(member.character)
+                                                                    .font(.system(size: 10))
+                                                                    .foregroundColor(.appTextSecondary)
+                                                                    .lineLimit(1)
+                                                            }
+                                                            .frame(width: 80)
                                                         }
-                                                        .frame(width: 80)
                                                     }
+                                                    .buttonStyle(PlainButtonStyle())
                                                 }
                                             }
                                         }
@@ -289,6 +293,9 @@ struct MovieDetailView: View {
         .fullScreenCover(item: $selectedSimilarMovie) { movie in
             MovieDetailView(movieId: movie.id)
         }
+        .fullScreenCover(item: $selectedActorId) { wrapper in
+            ActorDetailView(actorId: wrapper.id)
+        }
         .sheet(isPresented: $showRecommendSheet) {
             if let movie = viewModel.movieDetail {
                 RecommendMovieSheet(
@@ -338,6 +345,7 @@ struct MetadataPill: View {
         .cornerRadius(6)
     }
 }
+
 
 struct ActionBarIcon: View {
     let icon: String

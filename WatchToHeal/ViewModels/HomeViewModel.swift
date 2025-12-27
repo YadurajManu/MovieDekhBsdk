@@ -68,7 +68,7 @@ class HomeViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     // Director data
-    @Published var directorDetails: [Int: TMDBService.PersonDetail] = [:]
+    @Published var directorDetails: [Int: PersonDetail] = [:]
     @Published var directorMovies: [Int: [Movie]] = [:]
     
     // Famous directors (TMDB IDs)
