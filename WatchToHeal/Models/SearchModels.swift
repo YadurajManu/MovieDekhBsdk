@@ -58,6 +58,34 @@ struct GenresResponse: Codable {
     let genres: [Genre]
 }
 
+struct TMDBCountry: Codable, Identifiable, Hashable {
+    let iso_3166_1: String
+    let englishName: String
+    let nativeName: String
+    
+    var id: String { iso_3166_1 }
+    
+    enum CodingKeys: String, CodingKey {
+        case iso_3166_1
+        case englishName = "english_name"
+        case nativeName = "native_name"
+    }
+}
+
+struct TMDBLanguage: Codable, Identifiable, Hashable {
+    let iso_639_1: String
+    let englishName: String
+    let name: String
+    
+    var id: String { iso_639_1 }
+    
+    enum CodingKeys: String, CodingKey {
+        case iso_639_1
+        case englishName = "english_name"
+        case name
+    }
+}
+
 enum SortOption: String, CaseIterable, Identifiable {
     case popularityDesc = "popularity.desc"
     case popularityAsc = "popularity.asc"
@@ -101,6 +129,8 @@ struct FilterState {
     var monetizationTypes: Set<MonetizationType> = [.flatrate]
     var showAdult: Bool = false
     var region: String? = "US"
+    var selectedCountry: TMDBCountry? = nil
+    var selectedLanguage: TMDBLanguage? = nil
 
     
     mutating func reset() {

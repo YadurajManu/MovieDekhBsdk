@@ -138,7 +138,7 @@ struct HomeView: View {
 
                 
                 // Now Playing
-                MovieSectionView(title: "Now Playing in Theaters", movies: viewModel.nowPlaying) { movie in
+                MovieSectionView(title: nowPlayingTitle, movies: viewModel.nowPlaying) { movie in
                     selectedMovie = movie
                 } onSeeAllTap: {
                     selectedCategory = .nowPlaying
@@ -252,28 +252,28 @@ struct HomeView: View {
                 }
                 
                 // Netflix
-                MovieSectionView(title: "Popular on Netflix", movies: viewModel.netflixMovies) { movie in
+                MovieSectionView(title: providerTitle("NETFLIX", fallback: "Popular on Netflix"), movies: viewModel.netflixMovies) { movie in
                     selectedMovie = movie
                 } onSeeAllTap: {
                     selectedCategory = .netflix
                 }
 
                 // Disney+
-                MovieSectionView(title: "Disney+ Favorites", movies: viewModel.disneyMovies) { movie in
+                MovieSectionView(title: providerTitle("DISNEY+", fallback: "Disney+ Favorites"), movies: viewModel.disneyMovies) { movie in
                     selectedMovie = movie
                 } onSeeAllTap: {
                     selectedCategory = .disney
                 }
                 
                 // Amazon Prime
-                MovieSectionView(title: "Amazon Prime Video", movies: viewModel.amazonMovies) { movie in
+                MovieSectionView(title: providerTitle("AMAZON PRIME", fallback: "Amazon Prime Video"), movies: viewModel.amazonMovies) { movie in
                     selectedMovie = movie
                 } onSeeAllTap: {
                     selectedCategory = .amazon
                 }
                 
                 // Apple TV+
-                MovieSectionView(title: "Apple TV+ Originals", movies: viewModel.appleTVMovies) { movie in
+                MovieSectionView(title: providerTitle("APPLE TV+", fallback: "Apple TV+ Originals"), movies: viewModel.appleTVMovies) { movie in
                     selectedMovie = movie
                 } onSeeAllTap: {
                     selectedCategory = .appleTV
@@ -314,28 +314,28 @@ struct HomeView: View {
                 }
                 
                 // Netflix Series
-                MovieSectionView(title: "Netflix Originals", movies: viewModel.netflixSeries) { series in
+                MovieSectionView(title: providerTitle("NETFLIX", fallback: "Netflix Originals"), movies: viewModel.netflixSeries) { series in
                     selectedSeries = series
                 } onSeeAllTap: {
                     selectedCategory = .netflixSeries
                 }
                 
                 // Disney+ Series
-                MovieSectionView(title: "Disney+ Originals", movies: viewModel.disneySeries) { series in
+                MovieSectionView(title: providerTitle("DISNEY+", fallback: "Disney+ Originals"), movies: viewModel.disneySeries) { series in
                     selectedSeries = series
                 } onSeeAllTap: {
                     selectedCategory = .disneySeries
                 }
                 
                 // Amazon Series
-                MovieSectionView(title: "Amazon Prime Video", movies: viewModel.amazonSeries) { series in
+                MovieSectionView(title: providerTitle("AMAZON PRIME", fallback: "Amazon Prime Video"), movies: viewModel.amazonSeries) { series in
                     selectedSeries = series
                 } onSeeAllTap: {
                     selectedCategory = .amazonSeries
                 }
                 
                 // Apple TV+ Series
-                MovieSectionView(title: "Apple TV+ Originals", movies: viewModel.appleTVSeries) { series in
+                MovieSectionView(title: providerTitle("APPLE TV+", fallback: "Apple TV+ Originals"), movies: viewModel.appleTVSeries) { series in
                     selectedSeries = series
                 } onSeeAllTap: {
                     selectedCategory = .appleTVSeries
@@ -379,6 +379,27 @@ struct HomeView: View {
             .padding(.top, 10)
         }
         .padding(.bottom, 100)
+    }
+
+    private var regionNameUppercased: String? {
+        guard let code = appViewModel.userProfile?.preferredRegion,
+              !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return nil
+        }
+        return regionDisplayName(for: code)
+    }
+    
+    private var nowPlayingTitle: String {
+        guard let regionNameUppercased else {
+            return "Now Playing in Theaters"
+        }
+        return "NOW PLAYING IN \(regionNameUppercased)"
+    }
+    
+    private func providerTitle(_ provider: String, fallback: String) -> String {
+        guard let regionNameUppercased else { return fallback }
+        return "\(provider) IN \(regionNameUppercased)"
     }
 }
 

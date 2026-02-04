@@ -160,9 +160,26 @@ class TMDBService {
         let response = try JSONDecoder().decode(GenresResponse.self, from: data)
         return response.genres
     }
+
+    func fetchCountries() async throws -> [TMDBCountry] {
+        let urlString = "\(baseURL)/configuration/countries?api_key=\(apiKey)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        
+        let (data, _) = try await urlSession.data(from: url)
+        return try JSONDecoder().decode([TMDBCountry].self, from: data)
+    }
+    
+    func fetchLanguages() async throws -> [TMDBLanguage] {
+        let urlString = "\(baseURL)/configuration/languages?api_key=\(apiKey)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        
+        let (data, _) = try await urlSession.data(from: url)
+        return try JSONDecoder().decode([TMDBLanguage].self, from: data)
+    }
     
     func discoverMovies(filter: FilterState) async throws -> [Movie] {
         var components = URLComponents(string: "\(baseURL)/discover/movie")!
+        let region = filter.selectedCountry?.iso_3166_1 ?? filter.region ?? "US"
         var queryItems = [
             URLQueryItem(name: "api_key", value: apiKey),
             URLQueryItem(name: "language", value: "en-US"),
@@ -170,7 +187,8 @@ class TMDBService {
             URLQueryItem(name: "include_adult", value: String(filter.showAdult)),
             URLQueryItem(name: "include_video", value: "false"),
             URLQueryItem(name: "page", value: "1"),
-            URLQueryItem(name: "watch_region", value: filter.region ?? "US")
+            URLQueryItem(name: "watch_region", value: region),
+            URLQueryItem(name: "region", value: region)
         ]
         
         // Year Range (primary_release_date.gte / .lte)
@@ -198,6 +216,11 @@ class TMDBService {
         if filter.minVoteCount > 0 {
             queryItems.append(URLQueryItem(name: "vote_count.gte", value: String(filter.minVoteCount)))
         }
+
+        // Original Language
+        if let language = filter.selectedLanguage?.iso_639_1, !language.isEmpty {
+            queryItems.append(URLQueryItem(name: "with_original_language", value: language))
+        }
         
         // Runtime (with_runtime.gte / .lte)
         // Note: TMDB API uses separate params for runtime filtering
@@ -221,6 +244,67 @@ class TMDBService {
         let (data, _) = try await urlSession.data(from: url)
         let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
         return response.results
+    }
+
+    func discoverTV(filter: FilterState) async throws -> [Movie] {
+        var components = URLComponents(string: "\(baseURL)/discover/tv")!
+        let region = filter.selectedCountry?.iso_3166_1 ?? filter.region ?? "US"
+        var queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "language", value: "en-US"),
+            URLQueryItem(name: "sort_by", value: tvSortOption(filter.sortOption)),
+            URLQueryItem(name: "include_adult", value: String(filter.showAdult)),
+            URLQueryItem(name: "page", value: "1"),
+            URLQueryItem(name: "watch_region", value: region)
+        ]
+        
+        let startYear = Int(filter.yearRange.lowerBound)
+        let endYear = Int(filter.yearRange.upperBound)
+        queryItems.append(URLQueryItem(name: "first_air_date.gte", value: "\(startYear)-01-01"))
+        queryItems.append(URLQueryItem(name: "first_air_date.lte", value: "\(endYear)-12-31"))
+        
+        if !filter.selectedGenres.isEmpty {
+            let genreIds = filter.selectedGenres.map { String($0.id) }.joined(separator: ",")
+            queryItems.append(URLQueryItem(name: "with_genres", value: genreIds))
+        }
+        
+        if filter.minVoteAverage > 0 {
+            queryItems.append(URLQueryItem(name: "vote_average.gte", value: String(filter.minVoteAverage)))
+        }
+        
+        if filter.minVoteCount > 0 {
+            queryItems.append(URLQueryItem(name: "vote_count.gte", value: String(filter.minVoteCount)))
+        }
+        
+        if let language = filter.selectedLanguage?.iso_639_1, !language.isEmpty {
+            queryItems.append(URLQueryItem(name: "with_original_language", value: language))
+        }
+        
+        if !filter.monetizationTypes.isEmpty {
+            let types = filter.monetizationTypes.map { $0.rawValue.lowercased() }.joined(separator: "|")
+            queryItems.append(URLQueryItem(name: "with_watch_monetization_types", value: types))
+        }
+        
+        components.queryItems = queryItems
+        
+        guard let url = components.url else { throw URLError(.badURL) }
+        
+        let (data, _) = try await urlSession.data(from: url)
+        let response = try JSONDecoder().decode(MoviesResponse.self, from: data)
+        return response.results
+    }
+
+    private func tvSortOption(_ option: SortOption) -> String {
+        switch option {
+        case .dateDesc:
+            return "first_air_date.desc"
+        case .dateAsc:
+            return "first_air_date.asc"
+        case .titleAsc:
+            return "name.asc"
+        default:
+            return option.rawValue
+        }
     }
     
     // MARK: - Advanced Onboarding Support (Taste Fingerprinting)

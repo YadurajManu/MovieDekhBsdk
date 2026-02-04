@@ -75,47 +75,11 @@ struct SearchView: View {
                             .transition(.move(edge: .trailing).combined(with: .opacity))
                         }
                     }
-                    
-                    // Scope Bar (Tags)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(SearchViewModel.SearchScope.allCases) { scope in
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        viewModel.selectedScope = scope
-                                        Task { await viewModel.search() }
-                                    }
-                                }) {
-                                    Text(scope.rawValue)
-                                        .font(.system(size: 14, weight: .bold))
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 8)
-                                        .background(
-                                            viewModel.selectedScope == scope
-                                            ? Color.appPrimary
-                                            : Color.white.opacity(0.05)
-                                        )
-                                        .foregroundColor(
-                                            viewModel.selectedScope == scope
-                                            ? .black
-                                            : .appText
-                                        )
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
                 .background(Color.appBackground)
                 .zIndex(2)
-                
-                // Integrated Filter Bar
-                IntegratedFilterBar(viewModel: viewModel)
-                    .background(Color.appBackground)
-                    .zIndex(1)
                 
                 // Content Area
                 ZStack {
@@ -131,7 +95,7 @@ struct SearchView: View {
                         EmptyStateView.error(message: error) {
                             Task { await viewModel.search() }
                         }
-                    } else if viewModel.searchQuery.isEmpty && !viewModel.isDiscoveryMode {
+                    } else if viewModel.searchQuery.isEmpty {
                         // Recents & Trending Section
                         ScrollView(showsIndicators: false) {
                             VStack(alignment: .leading, spacing: 32) {
@@ -233,7 +197,7 @@ struct SearchView: View {
                                 if !viewModel.trendingMovies.isEmpty {
                                     VStack(alignment: .leading, spacing: 16) {
                                         HStack {
-                                            Text("TRENDING")
+                                            Text(trendingSectionTitle)
                                                 .font(.system(size: 14, weight: .black))
                                                 .foregroundColor(.appTextSecondary)
                                                 .kerning(1)
@@ -297,28 +261,22 @@ struct SearchView: View {
                         // Search Results List (Letterboxd Style)
                         ScrollView(showsIndicators: false) {
                             LazyVStack(spacing: 0) {
-                                let movies: [Movie] = {
-                                    if viewModel.isDiscoveryMode {
-                                        return viewModel.searchResults
-                                    } else {
-                                        return viewModel.multiSearchResults.compactMap { result in
-                                            guard result.mediaType != .person else { return nil }
-                                            let isMovie = result.mediaType == .movie
-                                            return Movie(
-                                                id: result.id,
-                                                title: isMovie ? result.displayTitle : nil,
-                                                name: result.mediaType == .tv ? result.displayTitle : nil,
-                                                posterPath: result.posterPath,
-                                                backdropPath: nil,
-                                                overview: result.overview ?? "",
-                                                releaseDate: result.releaseDate ?? result.firstAirDate ?? "",
-                                                voteAverage: result.voteAverage ?? 0.0,
-                                                voteCount: result.voteCount ?? 0,
-                                                originalTitle: result.originalTitle
-                                            )
-                                        }
-                                    }
-                                }()
+                                let movies: [Movie] = viewModel.multiSearchResults.compactMap { result in
+                                    guard result.mediaType != .person else { return nil }
+                                    let isMovie = result.mediaType == .movie
+                                    return Movie(
+                                        id: result.id,
+                                        title: isMovie ? result.displayTitle : nil,
+                                        name: result.mediaType == .tv ? result.displayTitle : nil,
+                                        posterPath: result.posterPath,
+                                        backdropPath: nil,
+                                        overview: result.overview ?? "",
+                                        releaseDate: result.releaseDate ?? result.firstAirDate ?? "",
+                                        voteAverage: result.voteAverage ?? 0.0,
+                                        voteCount: result.voteCount ?? 0,
+                                        originalTitle: result.originalTitle
+                                    )
+                                }
                                 
                                 ForEach(movies) { movie in
                                     Button(action: { 
@@ -338,7 +296,7 @@ struct SearchView: View {
                                 
                                 // People results if applicable
                                 let people = viewModel.multiSearchResults.filter { $0.mediaType == .person }
-                                if !people.isEmpty && viewModel.selectedScope != .movie && viewModel.selectedScope != .tv {
+                                if !people.isEmpty {
                                     VStack(alignment: .leading, spacing: 16) {
                                         Text("PEOPLE")
                                             .font(.system(size: 14, weight: .black))
@@ -401,7 +359,6 @@ struct SearchView: View {
             print("📊 Trending movies count: \(viewModel.trendingMovies.count)")
             print("🎬 Trailers count: \(viewModel.latestTrailers.count)")
             print("⭐ Featured lists count: \(viewModel.featuredLists.count)")
-            
             // Reload data if empty
             if viewModel.trendingMovies.isEmpty || viewModel.latestTrailers.isEmpty {
                 print("📥 Loading trending data...")
@@ -426,6 +383,15 @@ struct SearchView: View {
         .padding(.horizontal, 20)
         .padding(.top, 10)
         .padding(.bottom, 8)
+    }
+
+    private var trendingSectionTitle: String {
+        guard let code = appViewModel.userProfile?.preferredRegion,
+              !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return "TRENDING"
+        }
+        return "POPULAR IN \(regionDisplayName(for: code))"
     }
     
     private func discoveryTabButton(title: String, index: Int) -> some View {
@@ -508,4 +474,3 @@ struct StaffPickCard: View {
         }
     }
 }
-
